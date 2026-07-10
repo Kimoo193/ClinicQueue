@@ -21,12 +21,15 @@ public static class EmergencyEndpoints
 
         group.MapPost("/queue-sessions/{id:guid}/pause", PauseAsync)
             .RequireAuthorization(Policies.ClinicStaff)
-            .WithName("PauseQueueSession");
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("PauseQueueSession")
+            .WithSummary("Pause the live queue without losing positions");
 
         group.MapPost("/queue-sessions/{id:guid}/resume", ResumeAsync)
             .RequireAuthorization(Policies.Doctor)
-            .WithName("ResumeQueueSession");
-
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("ResumeQueueSession")
+            .WithSummary("Resume a paused queue from the stop point");
         return group;
     }
 

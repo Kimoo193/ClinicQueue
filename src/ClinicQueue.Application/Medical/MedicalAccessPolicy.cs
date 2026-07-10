@@ -45,4 +45,23 @@ public static class MedicalAccessPolicy
                 "Only the treating Doctor may edit clinical content; ClinicOwner is read-only (Clarification Q4).");
         }
     }
+
+    /// <summary>PatientProfile read: the patient themselves, or clinical staff (FR-080).</summary>
+    public static void EnsureCanReadProfile(bool isSelf, bool isClinicalStaff)
+    {
+        if (!isSelf && !isClinicalStaff)
+        {
+            throw new MedicalAccessException(
+                "Only the patient, treating doctor, or clinic owner may view this profile (FR-080).");
+        }
+    }
+
+    /// <summary>PatientProfile update: patient (self) only — no staff edit (FR-080).</summary>
+    public static void EnsureCanUpdateProfile(bool isSelf)
+    {
+        if (!isSelf)
+        {
+            throw new MedicalAccessException("Only the patient may update their own profile (FR-080).");
+        }
+    }
 }

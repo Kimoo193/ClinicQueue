@@ -91,21 +91,14 @@ export function PatientQueuePage({
   const appointments = appointmentsQuery.data ?? [];
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-8 px-4 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {t("patientQueue.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t("patientQueue.subtitle")}
-        </p>
+    <section className="cq-page">
+      <header className="cq-page-header">
+        <h1 className="cq-page-title">{t("patientQueue.title")}</h1>
+        <p className="cq-page-subtitle">{t("patientQueue.subtitle")}</p>
       </header>
 
-      <form
-        onSubmit={onSubmit}
-        className="flex flex-col gap-4 border-t border-emerald-900/10 pt-6"
-      >
-        <label className="flex flex-col gap-1 text-sm">
+      <form onSubmit={onSubmit} className="cq-section gap-4">
+        <label className="cq-label">
           <span>{t("patientQueue.companions")}</span>
           <input
             type="number"
@@ -113,11 +106,11 @@ export function PatientQueuePage({
             max={20}
             value={companionsCount}
             onChange={(e) => setCompanionsCount(Number(e.target.value))}
-            className="rounded-md border border-input bg-background px-3 py-2"
+            className="cq-field"
           />
         </label>
 
-        <label className="flex items-center gap-2 text-sm">
+        <label className="cq-check">
           <input
             type="checkbox"
             checked={possibleUrgent}
@@ -127,7 +120,7 @@ export function PatientQueuePage({
         </label>
 
         {formError ? (
-          <p className="text-sm text-red-700" role="alert">
+          <p className="cq-alert" role="alert">
             {formError}
           </p>
         ) : null}
@@ -139,15 +132,15 @@ export function PatientQueuePage({
         </Button>
       </form>
 
-      <div className="space-y-4 border-t border-emerald-900/10 pt-6">
-        <h2 className="text-xl font-medium">{t("patientQueue.myBookings")}</h2>
+      <div className="cq-section">
+        <h2 className="cq-section-title">{t("patientQueue.myBookings")}</h2>
         {appointmentsQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t("patientQueue.loading")}</p>
         ) : null}
         {appointments.length === 0 && !appointmentsQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t("patientQueue.empty")}</p>
         ) : null}
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-3">
           {appointments.map((appointment) => (
             <AppointmentCard
               key={appointment.appointmentId}
@@ -177,28 +170,28 @@ function AppointmentCard({
   const isRtl = locale.startsWith("ar");
 
   return (
-    <li className="rounded-lg border border-emerald-900/15 bg-emerald-50/40 p-4">
+    <li className="cq-card">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-2xl font-semibold tabular-nums">
+        <p className="text-2xl font-semibold tabular-nums tracking-tight">
           {t("patientQueue.tempNumber", { number: appointment.temporaryNumber })}
         </p>
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           {appointment.status}
         </span>
       </div>
 
       {countAhead !== null ? (
-        <p className="mt-2 text-sm">
+        <p className="mt-2 text-sm text-foreground">
           {t("patientQueue.countAhead", { count: countAhead })}
         </p>
       ) : null}
 
       {instruction ? (
         <p
-          className={`mt-3 rounded-md px-3 py-2 text-sm font-medium ${
+          className={`mt-3 ${
             instruction === "headToClinic"
-              ? "bg-amber-100 text-amber-950"
-              : "bg-sky-100 text-sky-950"
+              ? "cq-instruction-go"
+              : "cq-instruction-wait"
           }`}
           dir={isRtl ? "rtl" : "ltr"}
           role="status"

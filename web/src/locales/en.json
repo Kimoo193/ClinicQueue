@@ -3,14 +3,21 @@
     "name": "ClinicQueue",
     "tagline": "Smart clinic queue management",
     "clinicId": "Clinic ID",
+    "clinicIdPlaceholder": "00000000-0000-0000-0000-000000000000",
     "role": "View"
   },
   "status": {
-    "ready": "Web app is ready"
+    "ready": "Web app is ready",
+    "enterClinicId": "Enter a clinic ID above to open this view."
   },
   "language": {
     "ar": "العربية",
-    "en": "English"
+    "en": "English",
+    "toggle": "Switch language"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "primaryNav": "Primary"
   },
   "patientQueue": {
     "title": "Book & track your place",
@@ -45,6 +52,7 @@
     "instantBadge": "instant entry",
     "onBehalf": "Book on behalf",
     "patientRef": "Patient membership ID",
+    "membershipGuidPlaceholder": "membership-guid",
     "type": "Appointment type",
     "normal": "Normal",
     "urgent": "Urgent",
@@ -54,14 +62,18 @@
     "instantEntry": "Instant entry",
     "reason": "Reason (required)",
     "insertNow": "Insert now",
-    "inserting": "Inserting…"
+    "inserting": "Inserting…",
+    "repeatedAbsence": "repeated absences ({{count}})",
+    "restricted": "booking restricted",
+    "restrictBooking": "Restrict booking"
   },
   "nav": {
     "patient": "Patient",
     "bookings": "My bookings",
     "reception": "Reception",
     "doctor": "Doctor",
-    "owner": "Owner"
+    "owner": "Owner",
+    "admin": "Admin"
   },
   "patientBookings": {
     "title": "Manage your bookings",
@@ -124,5 +136,40 @@
     "saveVisit": "Save visit",
     "savePrescription": "Save prescription",
     "noVisitYet": "No visit recorded for this appointment yet."
+  },
+  "admin": {
+    "title": "Platform admin",
+    "subtitle": "Activate or suspend clinics, manage subscriptions, review analytics, and export clinic data.",
+    "filterAll": "All clinics",
+    "filterActive": "Active",
+    "filterSuspended": "Suspended",
+    "loading": "Loading clinics…",
+    "empty": "No clinics found.",
+    "clinicStatus": "Clinic: {{status}}",
+    "subscriptionStatus": "Subscription: {{status}}",
+    "plan": "Plan {{plan}} · renews {{renewal}}",
+    "activate": "Activate",
+    "suspend": "Suspend",
+    "manageSubscription": "Edit subscription",
+    "subscriptionTitle": "Subscription — {{name}}",
+    "planName": "Plan name",
+    "renewalDate": "Renewal date (UTC)",
+    "saveSubscription": "Save subscription",
+    "saving": "Saving…",
+    "analyticsTitle": "Platform analytics",
+    "analyticsSubtitle": "Usage and revenue across all clinics.",
+    "analyticsFrom": "From",
+    "analyticsTo": "To",
+    "refreshAnalytics": "Refresh",
+    "analyticsLoading": "Loading analytics…",
+    "metricClinics": "Active / total clinics",
+    "metricAppointments": "Appointments",
+    "metricVisits": "Visits",
+    "metricPatients": "Patient profiles",
+    "metricDeposits": "Confirmed deposits",
+    "metricSubscriptions": "Active / expired subscriptions",
+    "exportData": "Export data",
+    "exporting": "Exporting…",
+    "exportReady": "Exported {{name}}: {{patients}} patients, {{appointments}} appointments, {{visits}} visits (job {{jobId}})."
   }
 }

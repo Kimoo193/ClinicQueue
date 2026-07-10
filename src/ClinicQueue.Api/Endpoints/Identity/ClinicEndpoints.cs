@@ -1,8 +1,9 @@
+using System.Security.Claims;
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Application.Identity.Clinics;
 using ClinicQueue.Domain.Identity;
-using ClinicQueue.Infrastructure.Authorization;
 using ClinicQueue.Infrastructure.Auditing;
+using ClinicQueue.Infrastructure.Authorization;
 using ClinicQueue.Infrastructure.Identity;
 using ClinicQueue.Infrastructure.Persistence;
 using ClinicQueue.Infrastructure.Tenancy;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClinicQueue.Api.Endpoints.Identity;
 

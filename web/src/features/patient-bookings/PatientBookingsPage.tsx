@@ -125,47 +125,43 @@ export function PatientBookingsPage({
   const clinics = searchQuery.data ?? [];
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-10 px-4 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {t("patientBookings.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t("patientBookings.subtitle")}
-        </p>
+    <section className="cq-page">
+      <header className="cq-page-header">
+        <h1 className="cq-page-title">{t("patientBookings.title")}</h1>
+        <p className="cq-page-subtitle">{t("patientBookings.subtitle")}</p>
       </header>
 
       {formError ? (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="cq-alert" role="alert">
           {formError}
         </p>
       ) : null}
 
-      <section className="space-y-4 border-t border-emerald-900/10 pt-6">
-        <h2 className="text-lg font-medium">{t("patientBookings.searchTitle")}</h2>
+      <section className="cq-section">
+        <h2 className="cq-section-title">{t("patientBookings.searchTitle")}</h2>
         <form onSubmit={onSearch} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.specialty")}</span>
             <input
               value={specialty}
               onChange={(e) => setSpecialty(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.clinicName")}</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.location")}</span>
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
           <Button type="submit">{t("patientBookings.search")}</Button>
@@ -173,15 +169,15 @@ export function PatientBookingsPage({
 
         {searchSubmitted ? (
           searchQuery.isLoading ? (
-            <p className="text-muted-foreground text-sm">{t("patientBookings.loading")}</p>
+            <p className="text-sm text-muted-foreground">{t("patientBookings.loading")}</p>
           ) : clinics.length === 0 ? (
-            <p className="text-muted-foreground text-sm">{t("patientBookings.noClinics")}</p>
+            <p className="text-sm text-muted-foreground">{t("patientBookings.noClinics")}</p>
           ) : (
-            <ul className="divide-y divide-emerald-900/10">
+            <ul className="cq-list-plain">
               {clinics.map((clinic) => (
                 <li key={clinic.clinicId} className="flex flex-col gap-0.5 py-3">
                   <span className="font-medium">{clinic.name}</span>
-                  <span className="text-muted-foreground text-sm">
+                  <span className="text-sm text-muted-foreground">
                     {clinic.specialty}
                     {clinic.location ? ` · ${clinic.location}` : ""}
                     {clinic.aggregateRating != null
@@ -195,13 +191,14 @@ export function PatientBookingsPage({
         ) : null}
       </section>
 
-      <section className="space-y-4 border-t border-emerald-900/10 pt-6">
-        <h2 className="text-lg font-medium">{t("patientBookings.historyTitle")}</h2>
+      <section className="cq-section">
+        <h2 className="cq-section-title">{t("patientBookings.historyTitle")}</h2>
         <div className="flex flex-wrap gap-2">
           {(["upcoming", "completed", "cancelled"] as HistoryTab[]).map((key) => (
             <Button
               key={key}
               type="button"
+              size="sm"
               variant={tab === key ? "default" : "outline"}
               onClick={() => setTab(key)}
             >
@@ -211,11 +208,13 @@ export function PatientBookingsPage({
         </div>
 
         {historyQuery.isLoading ? (
-          <p className="text-muted-foreground text-sm">{t("patientBookings.loading")}</p>
+          <p className="text-sm text-muted-foreground">{t("patientBookings.loading")}</p>
         ) : appointments.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("patientBookings.emptyHistory")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("patientBookings.emptyHistory")}
+          </p>
         ) : (
-          <ul className="divide-y divide-emerald-900/10">
+          <ul className="cq-list-plain">
             {appointments.map((appt) => (
               <li
                 key={appt.appointmentId}
@@ -227,7 +226,7 @@ export function PatientBookingsPage({
                       number: appt.temporaryNumber,
                     })}
                   </span>
-                  <span className="text-muted-foreground font-mono text-xs">
+                  <span className="font-mono text-xs text-muted-foreground">
                     {appt.clinicId}
                   </span>
                   <span className="text-muted-foreground">
@@ -241,6 +240,7 @@ export function PatientBookingsPage({
                   <Button
                     type="button"
                     variant="outline"
+                    size="sm"
                     disabled={cancelMutation.isPending}
                     onClick={() => cancelMutation.mutate(appt.appointmentId)}
                   >
@@ -253,36 +253,36 @@ export function PatientBookingsPage({
         )}
       </section>
 
-      <section className="space-y-4 border-t border-emerald-900/10 pt-6">
-        <h2 className="text-lg font-medium">{t("patientBookings.dependentsTitle")}</h2>
+      <section className="cq-section">
+        <h2 className="cq-section-title">{t("patientBookings.dependentsTitle")}</h2>
 
         <form onSubmit={onRegisterDependent} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.dependentName")}</span>
             <input
               required
               value={dependentName}
               onChange={(e) => setDependentName(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.dependentDob")}</span>
             <input
               required
               type="date"
               value={dependentDob}
               onChange={(e) => setDependentDob(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.relationship")}</span>
             <input
               required
               value={dependentRel}
               onChange={(e) => setDependentRel(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             />
           </label>
           <Button type="submit" disabled={registerMutation.isPending}>
@@ -293,12 +293,12 @@ export function PatientBookingsPage({
         </form>
 
         <form onSubmit={onBookDependent} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="cq-label">
             <span>{t("patientBookings.bookFor")}</span>
             <select
               value={selectedDependentId}
               onChange={(e) => setSelectedDependentId(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2"
+              className="cq-field"
             >
               <option value="">{t("patientBookings.selectDependent")}</option>
               {dependents.map((d) => (

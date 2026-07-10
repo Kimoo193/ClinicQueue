@@ -20,6 +20,7 @@
     </PackageReference>
     <!-- Pin patched transitive: AspNetCore.OpenApi 10.0.0 pulls Microsoft.OpenApi 2.0.0 (NU1903, GHSA-v5pm-xwqc-g5wc). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.10.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.9.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
   </ItemGroup>
 

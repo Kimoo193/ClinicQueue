@@ -1,0 +1,36 @@
+# One-shot encrypted backup service (SC-015 / T083)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.backup.yml run --rm backup
+
+services:
+  backup:
+    image: postgres:16-alpine
+    profiles: ["backup"]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: clinicqueue
+      POSTGRES_USER: clinicqueue
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CLINICQUEUE_BACKUP_DIR: /backups
+      CLINICQUEUE_BACKUP_PASSPHRASE_FILE: /run/secrets/backup_passphrase
+      CLINICQUEUE_BACKUP_DAILY: "7"
+      CLINICQUEUE_BACKUP_WEEKLY: "4"
+      CLINICQUEUE_BACKUP_MONTHLY: "6"
+      CLINICQUEUE_BACKUP_OFFSITE: ${CLINICQUEUE_BACKUP_OFFSITE:-}
+    volumes:
+      - ./backup.sh:/scripts/backup.sh:ro
+      - clinicqueue_backups:/backups
+      - ${CLINICQUEUE_BACKUP_PASSPHRASE_FILE}:/run/secrets/backup_passphrase:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache gnupg bash rsync >/dev/null
+        bash /scripts/backup.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - clinicqueue
+
+volumes:
+  clinicqueue_backups:

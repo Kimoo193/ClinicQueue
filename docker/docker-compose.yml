@@ -25,6 +25,13 @@ services:
       Vapid__PublicKey: ${VAPID_PUBLIC_KEY}
       Vapid__PrivateKey: ${VAPID_PRIVATE_KEY}
       Hangfire__Enabled: "true"
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,8 +91,11 @@ services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      # Prefer env over `redis-cli -a` so the password is not visible in `ps`
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10

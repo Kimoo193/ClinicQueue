@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-10T17:40:00.000Z",
+  "title": "Design System: ClinicQueue",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Deep Clinical Teal",
+        "canonical": "oklch(0.4 0.085 170)",
+        "tonalRamp": [
+          "oklch(0.22 0.06 170)",
+          "oklch(0.3 0.07 170)",
+          "oklch(0.4 0.085 170)",
+          "oklch(0.5 0.08 170)",
+          "oklch(0.62 0.07 170)",
+          "oklch(0.75 0.05 170)",
+          "oklch(0.88 0.03 170)",
+          "oklch(0.96 0.015 170)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Cool Clinical Wash",
+        "canonical": "oklch(0.985 0.006 155)",
+        "tonalRamp": [
+          "oklch(0.22 0.025 160)",
+          "oklch(0.35 0.02 160)",
+          "oklch(0.45 0.02 160)",
+          "oklch(0.7 0.015 155)",
+          "oklch(0.88 0.015 155)",
+          "oklch(0.94 0.012 155)",
+          "oklch(0.975 0.008 155)",
+          "oklch(0.985 0.006 155)"
+        ]
+      },
+      "destructive": {
+        "role": "primary",
+        "displayName": "Clinical Alert Red",
+        "canonical": "oklch(0.5 0.18 25)",
+        "tonalRamp": [
+          "oklch(0.3 0.14 25)",
+          "oklch(0.4 0.16 25)",
+          "oklch(0.5 0.18 25)",
+          "oklch(0.6 0.16 25)",
+          "oklch(0.72 0.12 25)",
+          "oklch(0.85 0.06 25)",
+          "oklch(0.93 0.03 25)",
+          "oklch(0.97 0.015 25)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Forms, list rows, instructions." },
+      "title": { "displayName": "Title", "purpose": "Page and brand headings." },
+      "label": { "displayName": "Label", "purpose": "Field labels and supporting UI." }
+    },
+    "shadows": [
+      {
+        "name": "focus-lift",
+        "value": "0 1px 2px rgb(0 0 0 / 0.06)",
+        "purpose": "Skip-link and rare elevated focus affordances only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Button and field state transitions (~150–250ms)."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary actions: book, confirm arrival, call next, save.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Confirm arrival</button>",
+      "css": ".ds-btn-primary { background: var(--primary); color: var(--primary-foreground); padding: 8px 10px; height: 32px; border: none; border-radius: 0.5rem; font: 500 0.875rem/1 Geist Variable, Segoe UI, sans-serif; cursor: pointer; transition: background 0.2s; } .ds-btn-primary:hover { background: color-mix(in oklch, var(--primary) 80%, transparent); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Standard form control used across consoles.",
+      "html": "<label class=\"ds-label\">Companions<input class=\"ds-field\" type=\"number\" value=\"0\" /></label>",
+      "css": ".ds-label { display: flex; flex-direction: column; gap: 6px; font: 400 0.875rem/1.4 Geist Variable, Segoe UI, sans-serif; color: var(--foreground); } .ds-field { border: 1px solid var(--input); background: var(--card); color: var(--foreground); border-radius: 0.4rem; padding: 10px 12px; font: inherit; } .ds-field:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 40%, transparent); }"
+    },
+    {
+      "name": "Queue Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Patient appointment card with temporary number and instruction.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-num\">Temporary #12</p><p class=\"ds-go\">Head to the clinic now.</p></article>",
+      "css": ".ds-card { border: 1px solid var(--divider); background: var(--surface-tint); border-radius: 0.5rem; padding: 16px; } .ds-num { margin: 0; font: 600 1.5rem/1.2 Geist Variable, Segoe UI, sans-serif; font-variant-numeric: tabular-nums; color: var(--foreground); } .ds-go { margin: 12px 0 0; border-radius: 0.4rem; padding: 8px 12px; background: var(--warning-muted); color: var(--warning-foreground); font: 500 0.875rem/1.4 Geist Variable, Segoe UI, sans-serif; }"
+    },
+    {
+      "name": "Alert",
+      "kind": "custom",
+      "refersTo": "alert",
+      "description": "Form and action errors.",
+      "html": "<p class=\"ds-alert\" role=\"alert\">Something went wrong.</p>",
+      "css": ".ds-alert { margin: 0; border-radius: 0.4rem; border: 1px solid color-mix(in oklch, var(--destructive) 25%, transparent); background: color-mix(in oklch, var(--destructive) 8%, transparent); color: var(--destructive); padding: 8px 12px; font: 400 0.875rem/1.4 Geist Variable, Segoe UI, sans-serif; }"
+    },
+    {
+      "name": "Primary Nav",
+      "kind": "nav",
+      "refersTo": "button-outline",
+      "description": "Role switcher strip in the app shell.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Primary\"><button class=\"ds-nav-active\" type=\"button\">Patient</button><button class=\"ds-nav-idle\" type=\"button\">Reception</button></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; gap: 8px; border: 1px solid var(--divider); background: color-mix(in oklch, var(--card) 70%, transparent); border-radius: 0.5rem; padding: 8px; } .ds-nav-active, .ds-nav-idle { border: none; border-radius: 0.5rem; padding: 6px 10px; height: 28px; font: 500 0.8rem/1 Geist Variable, Segoe UI, sans-serif; cursor: pointer; } .ds-nav-active { background: var(--primary); color: var(--primary-foreground); } .ds-nav-idle { background: transparent; color: var(--foreground); } .ds-nav-idle:hover { background: var(--muted); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clinic Floor Console",
+    "overview": "ClinicQueue looks like a calm clinical operations tool: cool teal-tinted surfaces, one deep teal for primary actions, and clear status colors for wait/go and errors. Density serves reception and doctor workflows; patient screens stay short and instructional. The system rejects purple SaaS gradients, cream-terracotta editorial kits, and decorative glass.",
+    "keyCharacteristics": [
+      "Restrained palette: teal primary ≤10% of surface; neutrals carry the rest",
+      "Single sans family (Geist + Arabic-capable system fallbacks)",
+      "Shared cq-* layout primitives across all role consoles",
+      "Flat surfaces; depth via tonal wash and 1px dividers, not heavy shadows",
+      "RTL-first structure (start/end, logical properties)"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Primary teal is for actions and current selection only — never large decorative fills.",
+        "section": "colors"
+      },
+      {
+        "name": "The Product Type Rule",
+        "body": "No display serifs, no fluid hero clamps, no uppercase eyebrows on every section. Uppercase is reserved for tiny status chips only.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "No multi-layer card shadows. If it looks like a 2014 material card, remove the shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use cq-* primitives from index.css for new screens so patient/reception/doctor/admin stay one vocabulary.",
+      "Do keep Arabic RTL and English LTR parity; prefer logical properties (start/end, ps/pe).",
+      "Do make queue numbers and wait/go instructions the visual peak of patient views.",
+      "Do use semantic status tokens (destructive, warning, info, success) instead of raw Tailwind red-700 / emerald-800."
+    ],
+    "donts": [
+      "Don't use purple-on-white / indigo SaaS gradients or “AI tool” marketing chrome.",
+      "Don't use warm cream/sand/terracotta editorial defaults as the body background.",
+      "Don't use hero-metric templates, identical icon card grids, glassmorphism, or gradient text.",
+      "Don't invent a second button or field style per feature folder.",
+      "Don't put side-stripe accent borders on cards or alerts.",
+      "Don't hard-code stone-200 / emerald-900/10 dividers when border-divider exists."
+    ]
+  }
+}

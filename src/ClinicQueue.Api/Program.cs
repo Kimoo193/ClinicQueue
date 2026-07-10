@@ -4,6 +4,7 @@ using ClinicQueue.Api.Endpoints;
 using ClinicQueue.Api.Endpoints.Identity;
 using ClinicQueue.Api.Endpoints.Medical;
 using ClinicQueue.Api.Endpoints.Notifications;
+using ClinicQueue.Api.Endpoints.Platform;
 using ClinicQueue.Api.Endpoints.Queue;
 using ClinicQueue.Api.Hubs;
 using ClinicQueue.Api.Middleware;
@@ -11,6 +12,7 @@ using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Application.Identity.Clinics;
 using ClinicQueue.Application.Medical;
 using ClinicQueue.Application.Notifications;
+using ClinicQueue.Application.Platform.Clinics;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.Emergency;
 using ClinicQueue.Infrastructure;
@@ -20,6 +22,7 @@ using FluentValidation;
 using Hangfire;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +57,7 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
+builder.Services.AddClinicQueueCors(builder.Configuration);
 builder.Services.AddClinicQueueRateLimiting();
 builder.Services.AddClinicQueueInfrastructure(builder.Configuration);
 builder.Services.AddClinicQueueAuthorization();
@@ -73,6 +77,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateVisitRequestValidator
 builder.Services.AddValidatorsFromAssemblyContaining<IssuePrescriptionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<ClinicSearchRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDependentRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateSubscriptionRequestValidator>();
 
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? string.Empty;
 var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? string.Empty;
@@ -92,16 +97,26 @@ var app = builder.Build();
 
 // Must run first so downstream middleware sees the real client IP/scheme.
 app.UseForwardedHeaders();
+app.UseClinicQueueSecurityHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseCors(CorsExtensions.DefaultPolicy);
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseMiddleware<CsrfMiddleware>();
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
+// OpenAPI document + Scalar UI: off in Production unless OpenApi:EnableUi=true
+// (expose only behind auth/VPN). Avoids unauthenticated API surface disclosure.
+if (app.Environment.IsDevelopment()
+    || builder.Configuration.GetValue("OpenApi:EnableUi", false))
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("ClinicQueue API");
+        options.WithOpenApiRoutePattern("/openapi/{documentName}.json");
+    });
 }
 
 app.MapHealthEndpoints();
@@ -116,6 +131,7 @@ v1.MapGet("/status", () => Results.Ok(new
     utc = DateTime.UtcNow
 }))
 .WithName("GetStatus")
+.WithSummary("Service status heartbeat")
 .AllowAnonymous();
 
 v1.MapAuthEndpoints();
@@ -126,7 +142,10 @@ v1.MapArrivalEndpoints();
 v1.MapEmergencyEndpoints();
 v1.MapDayCloseEndpoints();
 v1.MapMedicalEndpoints();
+v1.MapProfileEndpoints();
 v1.MapPushSubscriptionEndpoints();
+v1.MapClinicAdminEndpoints();
+v1.MapAnalyticsEndpoints();
 
 app.MapHub<QueueHub>("/hubs/queue");
 
@@ -147,6 +166,16 @@ if (app.Services.GetService<IRecurringJobManager>() is not null
         "deposit-carry-over",
         job => job.ProcessAsync(CancellationToken.None),
         "*/5 * * * *");
+
+    RecurringJob.AddOrUpdate<RenewalNoticeJob>(
+        "subscription-renewal-notice",
+        job => job.ProcessAsync(CancellationToken.None),
+        "0 8 * * *");
+
+    RecurringJob.AddOrUpdate<BookingReminderJob>(
+        "booking-day-reminder",
+        job => job.ProcessAsync(CancellationToken.None),
+        "0 * * * *");
 }
 
 // Explicit migration apply for Development only — never auto-apply on Production

@@ -1,4 +1,5 @@
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Domain.Queue;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public interface IQueueSessionService
     /// <summary>
     /// Returns today's open (or paused) session for the clinic, creating an Open session
     /// for the operating day when none exists (FR-020). Throws when the day's session is Closed.
+    /// New session creation is blocked when the subscription is expired (FR-102).
     /// </summary>
     Task<QueueSession> GetOrOpenForBookingAsync(
         Guid clinicId,
@@ -26,8 +28,13 @@ public sealed class QueueSessionService : IQueueSessionService
     private const int MaxOpenAttempts = 3;
 
     private readonly IAppDbContext _db;
+    private readonly IClinicAccessGate _accessGate;
 
-    public QueueSessionService(IAppDbContext db) => _db = db;
+    public QueueSessionService(IAppDbContext db, IClinicAccessGate accessGate)
+    {
+        _db = db;
+        _accessGate = accessGate;
+    }
 
     public async Task<QueueSession?> GetForDateAsync(
         Guid clinicId,
@@ -52,6 +59,9 @@ public sealed class QueueSessionService : IQueueSessionService
             {
                 return EnsureBookable(session, operatingDate);
             }
+
+            // New QueueSession creation blocked when subscription expired (FR-102).
+            await _accessGate.EnsureCanAcceptNewBookingsAsync(clinicId, cancellationToken);
 
             session = new QueueSession
             {

@@ -10,6 +10,9 @@ export type ReceptionAppointment = {
   isInstantEntry: boolean;
   possibleUrgentFlag: boolean;
   companionsCount: number;
+  repeatedAbsenceFlag?: boolean;
+  absenceCount?: number;
+  membershipStatus?: string | null;
 };
 
 export type ConfirmArrivalResponse = {
@@ -155,4 +158,21 @@ export async function instantEntry(
     realNumber: number;
     status: string;
   };
+}
+
+export async function restrictBooking(
+  membershipId: string,
+): Promise<{ membershipId: string; status: string }> {
+  const response = await fetch(
+    `/api/v1/patients/${membershipId}/restrict-booking`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: jsonHeaders(),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return (await response.json()) as { membershipId: string; status: string };
 }

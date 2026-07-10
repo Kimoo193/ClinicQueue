@@ -21,20 +21,32 @@ public static class ArrivalEndpoints
     {
         group.MapPost("/appointments/{id:guid}/confirm-arrival", ConfirmArrivalAsync)
             .RequireAuthorization(Policies.Receptionist)
-            .WithName("ConfirmArrival");
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("ConfirmArrival")
+            .WithSummary("Confirm patient arrival and assign a real queue number");
 
         group.MapPost("/appointments/{id:guid}/call-next", CallNextAsync)
             .RequireAuthorization(Policies.Receptionist)
-            .WithName("CallNext");
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("CallNext")
+            .WithSummary("Call the next confirmed patient into the clinic");
 
         group.MapPost("/appointments/instant-entry", InstantEntryAsync)
             .RequireAuthorization(Policies.Receptionist)
-            .WithName("InstantEntry");
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("InstantEntry")
+            .WithSummary("Insert an urgent walk-in with immediate real number");
 
         group.MapGet("/appointments/today", ListTodayAsync)
             .RequireAuthorization(Policies.Receptionist)
-            .WithName("ListTodayAppointments");
+            .WithName("ListTodayAppointments")
+            .WithSummary("List today's appointments for the active clinic");
 
+        group.MapPost("/patients/{membershipId:guid}/restrict-booking", RestrictBookingAsync)
+            .RequireAuthorization(Policies.Receptionist)
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("RestrictPatientBooking")
+            .WithSummary("Restrict booking for a patient past the absence threshold");
         return group;
     }
 
@@ -205,9 +217,44 @@ public static class ArrivalEndpoints
         }
     }
 
+    private static async Task<IResult> RestrictBookingAsync(
+        Guid membershipId,
+        IAbsencePolicyService absencePolicy,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var clinicId = ResolveClinicId(httpContext);
+        var userId = ResolveUserId(httpContext);
+        if (clinicId is null || userId is null)
+        {
+            return Results.Problem(
+                detail: "clinic_id claim and an authenticated user are required.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        try
+        {
+            var result = await absencePolicy.RestrictBookingAsync(
+                clinicId.Value,
+                membershipId,
+                userId.Value,
+                cancellationToken);
+            return Results.Ok(result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     private static async Task<IResult> ListTodayAsync(
         IAppDbContext db,
         IQueueSessionService sessions,
+        IAbsencePolicyService absencePolicy,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -233,24 +280,61 @@ public static class ArrivalEndpoints
             return Results.Ok(Array.Empty<ReceptionAppointmentDto>());
         }
 
-        var appointments = await db.Appointments.AsNoTracking()
+        var rows = await db.Appointments.AsNoTracking()
             .Where(a => a.QueueSessionId == session.Id)
             .OrderBy(a => a.RealNumber ?? int.MaxValue)
             .ThenBy(a => a.TemporaryNumber)
             .Take(100)
-            .Select(a => new ReceptionAppointmentDto(
+            .Select(a => new
+            {
                 a.Id,
                 a.PatientMembershipId,
                 a.BookedByUserId,
-                a.Type.ToString(),
-                a.Method.ToString(),
-                a.Status.ToString(),
+                Type = a.Type.ToString(),
+                Method = a.Method.ToString(),
+                Status = a.Status.ToString(),
                 a.TemporaryNumber,
                 a.RealNumber,
                 a.IsInstantEntry,
                 a.PossibleUrgentFlag,
-                a.CompanionsCount))
+                a.CompanionsCount
+            })
             .ToListAsync(cancellationToken);
+
+        var membershipIds = rows
+            .Where(r => r.PatientMembershipId is not null)
+            .Select(r => r.PatientMembershipId!.Value)
+            .Distinct();
+
+        var flags = await absencePolicy.EvaluateManyAsync(
+            clinicId.Value,
+            membershipIds,
+            cancellationToken);
+
+        var appointments = rows.Select(a =>
+        {
+            AbsenceFlagResult? flag = null;
+            if (a.PatientMembershipId is { } mid)
+            {
+                flags.TryGetValue(mid, out flag);
+            }
+
+            return new ReceptionAppointmentDto(
+                a.Id,
+                a.PatientMembershipId,
+                a.BookedByUserId,
+                a.Type,
+                a.Method,
+                a.Status,
+                a.TemporaryNumber,
+                a.RealNumber,
+                a.IsInstantEntry,
+                a.PossibleUrgentFlag,
+                a.CompanionsCount,
+                flag?.IsFlagged ?? false,
+                flag?.AbsenceCount ?? 0,
+                flag?.MembershipStatus);
+        }).ToList();
 
         return Results.Ok(appointments);
     }

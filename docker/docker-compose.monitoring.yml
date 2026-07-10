@@ -1,0 +1,28 @@
+# ClinicQueue health monitoring & alerting (SC-010 / T081a)
+#
+# Target: ≥99.5% uptime during each clinic's operating hours.
+# Liveness:  GET /health
+# Readiness: GET /health/ready  (PostgreSQL + Redis)
+
+services:
+  # Optional sidecar — enable with:
+  #   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+  health-monitor:
+    image: curlimages/curl:8.12.1
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/scripts/health-monitor.sh"]
+    environment:
+      CLINICQUEUE_BASE_URL: http://api:8080
+      CLINICQUEUE_LIVENESS_PATH: /health
+      CLINICQUEUE_READINESS_PATH: /health/ready
+      CLINICQUEUE_HEALTH_INTERVAL_SEC: "30"
+      CLINICQUEUE_HEALTH_FAIL_THRESHOLD: "3"
+      # Optional Slack/Discord/generic webhook for alerts
+      CLINICQUEUE_ALERT_WEBHOOK: ${CLINICQUEUE_ALERT_WEBHOOK:-}
+      CLINICQUEUE_INSECURE_TLS: "0"
+    volumes:
+      - ./health-monitor.sh:/scripts/health-monitor.sh:ro
+    depends_on:
+      - api
+    networks:
+      - clinicqueue

@@ -66,7 +66,10 @@ public sealed record ReceptionAppointmentDto(
     int? RealNumber,
     bool IsInstantEntry,
     bool PossibleUrgentFlag,
-    int CompanionsCount);
+    int CompanionsCount,
+    bool RepeatedAbsenceFlag = false,
+    int AbsenceCount = 0,
+    string? MembershipStatus = null);
 
 public sealed class CreateAppointmentRequestValidator : AbstractValidator<CreateAppointmentRequest>
 {

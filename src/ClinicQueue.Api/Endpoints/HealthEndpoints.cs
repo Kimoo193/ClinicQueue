@@ -11,6 +11,7 @@ public static class HealthEndpoints
     {
         app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
             .WithName("Liveness")
+            .WithSummary("Liveness probe")
             .AllowAnonymous();
 
         app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
@@ -31,7 +32,10 @@ public static class HealthEndpoints
                 };
                 await context.Response.WriteAsJsonAsync(payload);
             }
-        });
+        })
+        .WithName("Readiness")
+        .WithSummary("Readiness probe (PostgreSQL + Redis)")
+        .AllowAnonymous();
 
         return app;
     }

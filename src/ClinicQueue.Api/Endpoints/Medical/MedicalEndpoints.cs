@@ -32,6 +32,10 @@ public static class MedicalEndpoints
             .RequireAuthorization(Policies.Doctor)
             .WithName("IssuePrescription");
 
+        group.MapGet("/patients/me/clinics/{clinicId:guid}/visits", ListMyVisitsAsync)
+            .RequireAuthorization(Policies.Patient)
+            .WithName("ListMyVisits");
+
         return group;
     }
 
@@ -209,6 +213,24 @@ public static class MedicalEndpoints
         {
             return MapDomainError(ex);
         }
+    }
+
+    private static async Task<IResult> ListMyVisitsAsync(
+        Guid clinicId,
+        IListPatientVisitsHandler handler,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var userId = ResolveUserId(httpContext);
+        if (userId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var results = await handler.HandleAsync(
+            new ListPatientVisitsQuery(clinicId, userId.Value),
+            cancellationToken);
+        return Results.Ok(results);
     }
 
     private static async Task<(Guid ClinicId, Guid UserId, ClinicRole Role)?> ResolveClinicalContextAsync(

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Sessions;
@@ -47,19 +48,22 @@ public sealed class InstantEntryHandler : IInstantEntryHandler
     private readonly IUrgentInjectionService _injection;
     private readonly IQueueNotificationRules _notificationRules;
     private readonly IAuditWriter _audit;
+    private readonly IClinicAccessGate _accessGate;
 
     public InstantEntryHandler(
         IAppDbContext db,
         IQueueSessionService sessions,
         IUrgentInjectionService injection,
         IQueueNotificationRules notificationRules,
-        IAuditWriter audit)
+        IAuditWriter audit,
+        IClinicAccessGate accessGate)
     {
         _db = db;
         _sessions = sessions;
         _injection = injection;
         _notificationRules = notificationRules;
         _audit = audit;
+        _accessGate = accessGate;
     }
 
     public async Task<InstantEntryResult> HandleAsync(
@@ -70,6 +74,8 @@ public sealed class InstantEntryHandler : IInstantEntryHandler
         {
             throw new ArgumentException("Instant Entry reason is mandatory (FR-031).", nameof(command));
         }
+
+        await _accessGate.EnsureClinicActiveAsync(command.ClinicId, cancellationToken);
 
         if (_db is not DbContext ef)
         {

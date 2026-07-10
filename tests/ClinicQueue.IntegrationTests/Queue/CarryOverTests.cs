@@ -1,3 +1,4 @@
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.DayClose;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Domain.Notifications;
@@ -27,7 +28,7 @@ public sealed class CarryOverTests(Infrastructure.PostgresFixture fixture)
     }
 
     private CloseDaySessionHandler CloseHandler(AppDbContext db) =>
-        new(db, new CarryOverService(db), new EfAuditWriter(db));
+        new(db, new CarryOverService(db), new EfAuditWriter(db), new ClinicAccessGate(db));
 
     private static CarryOverHandler CarryHandler(AppDbContext db) =>
         new(db, new CarryOverService(db));

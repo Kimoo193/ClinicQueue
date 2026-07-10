@@ -31,6 +31,10 @@ public sealed record GetVisitByAppointmentCommand(
     Guid ActorUserId,
     ClinicRole ActorRole);
 
+public sealed record ListPatientVisitsQuery(
+    Guid ClinicId,
+    Guid PatientUserId);
+
 public sealed record IssuePrescriptionCommand(
     Guid ClinicId,
     Guid VisitId,
@@ -54,6 +58,13 @@ public interface IUpdateVisitHandler
 public interface IGetVisitHandler
 {
     Task<VisitResponse> HandleAsync(GetVisitByAppointmentCommand command, CancellationToken cancellationToken = default);
+}
+
+public interface IListPatientVisitsHandler
+{
+    Task<IReadOnlyList<PatientVisitHistoryDto>> HandleAsync(
+        ListPatientVisitsQuery query,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IIssuePrescriptionHandler
@@ -203,6 +214,77 @@ public sealed class GetVisitHandler : IGetVisitHandler
         await _db.SaveChangesAsync(cancellationToken);
 
         return VisitMapping.Map(visit, visit.Prescription);
+    }
+}
+
+/// <summary>Patient's own visit + prescription history for one clinic (FR-083, FR-086).</summary>
+public sealed class ListPatientVisitsHandler : IListPatientVisitsHandler
+{
+    private readonly IAppDbContext _db;
+    private readonly IAuditWriter _audit;
+
+    public ListPatientVisitsHandler(IAppDbContext db, IAuditWriter audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
+
+    public async Task<IReadOnlyList<PatientVisitHistoryDto>> HandleAsync(
+        ListPatientVisitsQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var membershipIds = await _db.ClinicMemberships.AsNoTracking()
+            .Where(m => m.ClinicId == query.ClinicId
+                        && m.UserId == query.PatientUserId
+                        && m.Role == ClinicRole.Patient)
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        if (membershipIds.Count == 0)
+        {
+            return Array.Empty<PatientVisitHistoryDto>();
+        }
+
+        var visits = await _db.Visits.AsNoTracking()
+            .Include(v => v.Prescription)
+            .Where(v => v.ClinicId == query.ClinicId
+                        && membershipIds.Contains(v.Appointment.PatientMembershipId!.Value))
+            .OrderByDescending(v => v.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        if (visits.Count > 0)
+        {
+            // FR-087: log every disclosed visit individually, same "VisitRead" action GetVisitHandler
+            // uses, so an audit query by entity finds every access regardless of which endpoint served it.
+            foreach (var visit in visits)
+            {
+                _audit.Append(
+                    query.ClinicId,
+                    query.PatientUserId,
+                    "VisitRead",
+                    nameof(Visit),
+                    visit.Id,
+                    JsonSerializer.Serialize(
+                        new { role = nameof(ClinicRole.Patient), viaHistoryList = true },
+                        QueueNotificationRules.CamelCaseJson));
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        return visits.Select(v => new PatientVisitHistoryDto(
+            v.Id,
+            v.CreatedAt,
+            v.Diagnosis,
+            v.Notes,
+            v.Prescription is null
+                ? null
+                : new PrescriptionResponse(
+                    v.Prescription.Id,
+                    v.Prescription.Drug,
+                    v.Prescription.Dose,
+                    v.Prescription.Frequency,
+                    v.Prescription.Duration))).ToList();
     }
 }
 
