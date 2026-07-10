@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/coverage/
+**/TestResults/
+
+# Secrets / env
+.env
+.env.*
+!**/.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# IDE / OS
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Docs / specs (not needed in image context)
+docs/
+specs/
+.specify/
+.claude/
+.cursor/
+
+# Local compose overrides
+docker-compose.override.yml

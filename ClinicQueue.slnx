@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ClinicQueue.Api/ClinicQueue.Api.csproj" />
+    <Project Path="src/ClinicQueue.Application/ClinicQueue.Application.csproj" />
+    <Project Path="src/ClinicQueue.Domain/ClinicQueue.Domain.csproj" />
+    <Project Path="src/ClinicQueue.Infrastructure/ClinicQueue.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ClinicQueue.IntegrationTests/ClinicQueue.IntegrationTests.csproj" />
+    <Project Path="tests/ClinicQueue.UnitTests/ClinicQueue.UnitTests.csproj" />
+  </Folder>
+</Solution>
