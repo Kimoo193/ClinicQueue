@@ -3,6 +3,7 @@ using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Application.Medical;
 using ClinicQueue.Application.Notifications;
 using ClinicQueue.Application.Queue.Booking;
+using ClinicQueue.Application.Queue.DayClose;
 using ClinicQueue.Application.Queue.Emergency;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Numbering;
@@ -52,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationChannel, WebPushNotificationChannel>();
         services.AddScoped<OutboxDispatchJob>();
         services.AddScoped<AutoAbsenceJob>();
+        services.AddScoped<DepositCarryOverJob>();
         services.AddScoped<IQueueSessionService, QueueSessionService>();
         services.AddScoped<ICreateAppointmentHandler, CreateAppointmentHandler>();
         services.AddScoped<IOnBehalfBookingHandler, OnBehalfBookingHandler>();
@@ -68,6 +70,10 @@ public static class DependencyInjection
         services.AddScoped<IInstantEntryHandler, InstantEntryHandler>();
         services.AddScoped<IPauseQueueSessionHandler, PauseQueueSessionHandler>();
         services.AddScoped<IResumeQueueSessionHandler, ResumeQueueSessionHandler>();
+        services.AddScoped<ICarryOverService, CarryOverService>();
+        services.AddScoped<ICloseDaySessionHandler, CloseDaySessionHandler>();
+        services.AddScoped<ICarryOverHandler, CarryOverHandler>();
+        services.AddScoped<IConfirmDepositHandler, ConfirmDepositHandler>();
         services.AddScoped<ICreateVisitHandler, CreateVisitHandler>();
         services.AddScoped<IUpdateVisitHandler, UpdateVisitHandler>();
         services.AddScoped<IGetVisitHandler, GetVisitHandler>();

@@ -89,7 +89,7 @@ public sealed class RegisterDependentHandler : IRegisterDependentHandler
             ?? throw new InvalidOperationException("Clinic not found.");
 
         // Guardian must have an active patient membership at the clinic.
-        var membership = await _db.ClinicMemberships
+        _ = await _db.ClinicMemberships
             .FirstOrDefaultAsync(
                 m => m.ClinicId == command.ClinicId
                      && m.UserId == command.GuardianUserId
@@ -98,8 +98,6 @@ public sealed class RegisterDependentHandler : IRegisterDependentHandler
                 cancellationToken)
             ?? throw new InvalidOperationException(
                 "Active patient membership required to register a dependent.");
-
-        _ = membership;
 
         var dependent = new Dependent
         {
@@ -140,7 +138,7 @@ public sealed class DependentBookingHandler : IDependentBookingHandler
         DependentBookingCommand command,
         CancellationToken cancellationToken = default)
     {
-        var dependent = await _db.Dependents
+        _ = await _db.Dependents
             .FirstOrDefaultAsync(
                 d => d.Id == command.DependentId
                      && d.ClinicId == command.ClinicId
@@ -148,8 +146,6 @@ public sealed class DependentBookingHandler : IDependentBookingHandler
                 cancellationToken)
             ?? throw new InvalidOperationException(
                 "Dependent not found for this guardian/clinic. Register the dependent first.");
-
-        _ = dependent;
 
         return await _create.HandleAsync(
             new CreateAppointmentCommand(

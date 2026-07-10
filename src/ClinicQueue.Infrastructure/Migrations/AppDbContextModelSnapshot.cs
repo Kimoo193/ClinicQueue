@@ -629,6 +629,13 @@ namespace ClinicQueue.Infrastructure.Migrations
                     b.Property<Guid?>("DependentId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DepositConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DepositProofUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
                     b.Property<string>("InstantEntryReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -689,6 +696,8 @@ namespace ClinicQueue.Infrastructure.Migrations
                         .HasFilter("\"PatientMembershipId\" IS NOT NULL AND \"Status\" IN (0, 1)");
 
                     b.HasIndex("ClinicId", "QueueSessionId", "Status");
+
+                    b.HasIndex("QueueSessionId", "Method", "Status");
 
                     b.ToTable("appointments", (string)null);
                 });

@@ -124,6 +124,7 @@ v1.MapClinicSearchEndpoints();
 v1.MapBookingEndpoints();
 v1.MapArrivalEndpoints();
 v1.MapEmergencyEndpoints();
+v1.MapDayCloseEndpoints();
 v1.MapMedicalEndpoints();
 v1.MapPushSubscriptionEndpoints();
 
@@ -141,6 +142,11 @@ if (app.Services.GetService<IRecurringJobManager>() is not null
         "auto-absence",
         job => job.ProcessAsync(CancellationToken.None),
         "*/30 * * * * *");
+
+    RecurringJob.AddOrUpdate<DepositCarryOverJob>(
+        "deposit-carry-over",
+        job => job.ProcessAsync(CancellationToken.None),
+        "*/5 * * * *");
 }
 
 // Explicit migration apply for Development only — never auto-apply on Production

@@ -203,10 +203,10 @@ for deposit no-shows.
 close the day; carry them over; confirm they lead the next day's queue in the same
 relative order, ahead of new bookings.
 
-- [ ] T056 [P] [US5] Integration test: carry-over places patients at the front preserving prior-day order; deposit no-show auto-carries-over at close in `tests/ClinicQueue.IntegrationTests/Queue/CarryOverTests.cs` (FR-064, FR-065)
-- [ ] T057 [US5] Implement the deposit booking method (screenshot upload or pay-at-clinic) with receptionist manual confirmation in `src/ClinicQueue.Application/Queue/Booking/DepositBookingHandler.cs` (FR-042)
-- [ ] T058 [US5] Implement close-day + unserved-list and carry-over use cases (front placement, preserve prior-day relative order) + endpoints with carry-over outbox triggers in `src/ClinicQueue.Api/Endpoints/Queue/DayCloseEndpoints.cs` (FR-060–FR-064, FR-074)
-- [ ] T059 [US5] Implement the deposit no-show auto-carry-over Hangfire job in `src/ClinicQueue.Infrastructure/Jobs/DepositCarryOverJob.cs` (FR-065)
+- [X] T056 [P] [US5] Integration test: carry-over places patients at the front preserving prior-day order; deposit no-show auto-carries-over at close in `tests/ClinicQueue.IntegrationTests/Queue/CarryOverTests.cs` (FR-064, FR-065)
+- [X] T057 [US5] Implement the deposit booking method (screenshot upload or pay-at-clinic) with receptionist manual confirmation in `src/ClinicQueue.Application/Queue/Booking/DepositBookingHandler.cs` (FR-042)
+- [X] T058 [US5] Implement close-day + unserved-list and carry-over use cases (front placement, preserve prior-day relative order) + endpoints with carry-over outbox triggers in `src/ClinicQueue.Api/Endpoints/Queue/DayCloseEndpoints.cs` (FR-060–FR-064, FR-074)
+- [X] T059 [US5] Implement the deposit no-show auto-carry-over Hangfire job in `src/ClinicQueue.Infrastructure/Jobs/DepositCarryOverJob.cs` (FR-065)
 - [ ] T060 [P] [US5] Build the reception day-close / carry-over web UI (deposit confirm, unserved list, carry-over/cancel actions) in `web/src/features/reception-dayclose/`
 
 **Checkpoint**: Full daily operational cycle works end to end.
