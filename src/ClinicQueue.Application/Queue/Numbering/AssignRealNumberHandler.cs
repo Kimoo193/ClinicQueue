@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Domain.Notifications;
 using ClinicQueue.Domain.Queue;
@@ -32,21 +33,26 @@ public sealed class AssignRealNumberHandler : IAssignRealNumberHandler
     private readonly IAppDbContext _db;
     private readonly IUrgentInjectionService _injection;
     private readonly IQueueNotificationRules _notificationRules;
+    private readonly IClinicAccessGate _accessGate;
 
     public AssignRealNumberHandler(
         IAppDbContext db,
         IUrgentInjectionService injection,
-        IQueueNotificationRules notificationRules)
+        IQueueNotificationRules notificationRules,
+        IClinicAccessGate accessGate)
     {
         _db = db;
         _injection = injection;
         _notificationRules = notificationRules;
+        _accessGate = accessGate;
     }
 
     public async Task<AssignRealNumberResult> HandleAsync(
         AssignRealNumberCommand command,
         CancellationToken cancellationToken = default)
     {
+        await _accessGate.EnsureClinicActiveAsync(command.ClinicId, cancellationToken);
+
         if (_db is not DbContext ef)
         {
             throw new InvalidOperationException("AssignRealNumber requires an EF Core DbContext.");

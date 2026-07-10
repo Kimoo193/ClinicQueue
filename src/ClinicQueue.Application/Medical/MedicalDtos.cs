@@ -27,6 +27,26 @@ public sealed record PrescriptionResponse(
     string Frequency,
     string Duration);
 
+public sealed record PatientProfileResponse(
+    Guid MembershipId,
+    string? BloodType,
+    string? ChronicConditions,
+    string? Allergies,
+    string? CurrentMedications);
+
+public sealed record UpdatePatientProfileRequest(
+    string? BloodType,
+    string? ChronicConditions,
+    string? Allergies,
+    string? CurrentMedications);
+
+public sealed record PatientVisitHistoryDto(
+    Guid VisitId,
+    DateTime Date,
+    string Diagnosis,
+    string Notes,
+    PrescriptionResponse? Prescription);
+
 public sealed class CreateVisitRequestValidator : AbstractValidator<CreateVisitRequest>
 {
     public CreateVisitRequestValidator()
@@ -53,5 +73,16 @@ public sealed class IssuePrescriptionRequestValidator : AbstractValidator<IssueP
         RuleFor(x => x.Dose).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Frequency).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Duration).NotEmpty().MaximumLength(100);
+    }
+}
+
+public sealed class UpdatePatientProfileRequestValidator : AbstractValidator<UpdatePatientProfileRequest>
+{
+    public UpdatePatientProfileRequestValidator()
+    {
+        RuleFor(x => x.BloodType).MaximumLength(20);
+        RuleFor(x => x.ChronicConditions).MaximumLength(2000);
+        RuleFor(x => x.Allergies).MaximumLength(2000);
+        RuleFor(x => x.CurrentMedications).MaximumLength(2000);
     }
 }

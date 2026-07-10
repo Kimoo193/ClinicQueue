@@ -16,7 +16,9 @@ public static class AuthorizationExtensions
             .AddPolicy(Policies.ClinicStaff, p => p.RequireRole(
                 Roles.Receptionist, Roles.Doctor, Roles.ClinicOwner, Roles.SuperAdmin))
             .AddPolicy(Policies.PatientOrReceptionist, p => p.RequireRole(
-                Roles.Patient, Roles.Receptionist, Roles.ClinicOwner, Roles.SuperAdmin));
+                Roles.Patient, Roles.Receptionist, Roles.ClinicOwner, Roles.SuperAdmin))
+            .AddPolicy(Policies.PatientOrDoctor, p => p.RequireRole(
+                Roles.Patient, Roles.Doctor, Roles.ClinicOwner, Roles.SuperAdmin));
 
         return services;
     }

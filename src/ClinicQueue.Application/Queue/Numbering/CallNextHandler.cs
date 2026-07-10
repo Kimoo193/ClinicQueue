@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Domain.Notifications;
 using ClinicQueue.Domain.Queue;
@@ -22,13 +23,20 @@ public interface ICallNextHandler
 public sealed class CallNextHandler : ICallNextHandler
 {
     private readonly IAppDbContext _db;
+    private readonly IClinicAccessGate _accessGate;
 
-    public CallNextHandler(IAppDbContext db) => _db = db;
+    public CallNextHandler(IAppDbContext db, IClinicAccessGate accessGate)
+    {
+        _db = db;
+        _accessGate = accessGate;
+    }
 
     public async Task<CallNextResult> HandleAsync(
         CallNextCommand command,
         CancellationToken cancellationToken = default)
     {
+        await _accessGate.EnsureClinicActiveAsync(command.ClinicId, cancellationToken);
+
         if (_db is not DbContext ef)
         {
             throw new InvalidOperationException("CallNext requires an EF Core DbContext.");

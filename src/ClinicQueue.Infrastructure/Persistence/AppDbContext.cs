@@ -3,6 +3,7 @@ using ClinicQueue.Domain.Common;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Domain.Medical;
 using ClinicQueue.Domain.Notifications;
+using ClinicQueue.Domain.Platform;
 using ClinicQueue.Domain.Queue;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -29,6 +30,7 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<PatientProfile> PatientProfiles => Set<PatientProfile>();
     public DbSet<Visit> Visits => Set<Visit>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<ClinicExportJob> ClinicExportJobs => Set<ClinicExportJob>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +74,7 @@ public class AppDbContext : DbContext, IAppDbContext
         ConfigurePatientProfile(modelBuilder);
         ConfigureVisit(modelBuilder);
         ConfigurePrescription(modelBuilder);
+        ConfigureClinicExportJob(modelBuilder);
 
         // Intentionally NO HasQueryFilter for tenant isolation — applied in BaseRepository at execution time.
     }
@@ -297,6 +300,18 @@ public class AppDbContext : DbContext, IAppDbContext
             .WithOne(v => v.Prescription)
             .HasForeignKey<Prescription>(x => x.VisitId)
             .OnDelete(DeleteBehavior.Restrict);
+        ConfigureRowVersion(e);
+    }
+
+    private static void ConfigureClinicExportJob(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<ClinicExportJob>();
+        e.ToTable("clinic_export_jobs");
+        e.HasKey(x => x.Id);
+        e.HasIndex(x => new { x.ClinicId, x.CreatedAt });
+        e.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        e.Property(x => x.PayloadJson).HasColumnType("text");
+        e.Property(x => x.Error).HasMaxLength(2000);
         ConfigureRowVersion(e);
     }
 

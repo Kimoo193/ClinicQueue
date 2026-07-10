@@ -2,6 +2,11 @@ using System.Text;
 using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Application.Medical;
 using ClinicQueue.Application.Notifications;
+using ClinicQueue.Application.Platform;
+using ClinicQueue.Application.Platform.Analytics;
+using ClinicQueue.Application.Platform.Clinics;
+using ClinicQueue.Application.Platform.Export;
+using ClinicQueue.Application.Platform.Subscriptions;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.DayClose;
 using ClinicQueue.Application.Queue.Emergency;
@@ -54,6 +59,17 @@ public static class DependencyInjection
         services.AddScoped<OutboxDispatchJob>();
         services.AddScoped<AutoAbsenceJob>();
         services.AddScoped<DepositCarryOverJob>();
+        services.AddScoped<RenewalNoticeJob>();
+        services.AddScoped<BookingReminderJob>();
+        services.AddScoped<IAbsencePolicyService, AbsencePolicyService>();
+        services.AddScoped<IClinicAccessGate, ClinicAccessGate>();
+        services.AddScoped<IListAdminClinicsHandler, ListAdminClinicsHandler>();
+        services.AddScoped<IActivateClinicHandler, ActivateClinicHandler>();
+        services.AddScoped<ISuspendClinicHandler, SuspendClinicHandler>();
+        services.AddScoped<IUpdateSubscriptionHandler, UpdateSubscriptionHandler>();
+        services.AddScoped<ISubscriptionLifecycleService, SubscriptionLifecycleService>();
+        services.AddScoped<IPlatformAnalyticsHandler, PlatformAnalyticsHandler>();
+        services.AddScoped<IClinicExportHandler, ClinicExportHandler>();
         services.AddScoped<IQueueSessionService, QueueSessionService>();
         services.AddScoped<ICreateAppointmentHandler, CreateAppointmentHandler>();
         services.AddScoped<IOnBehalfBookingHandler, OnBehalfBookingHandler>();
@@ -78,6 +94,9 @@ public static class DependencyInjection
         services.AddScoped<IUpdateVisitHandler, UpdateVisitHandler>();
         services.AddScoped<IGetVisitHandler, GetVisitHandler>();
         services.AddScoped<IIssuePrescriptionHandler, IssuePrescriptionHandler>();
+        services.AddScoped<IListPatientVisitsHandler, ListPatientVisitsHandler>();
+        services.AddScoped<IGetPatientProfileHandler, GetPatientProfileHandler>();
+        services.AddScoped<IUpdatePatientProfileHandler, UpdatePatientProfileHandler>();
         services.AddScoped<ICountAheadService, CountAheadService>();
         services.AddScoped<IQueueNotificationRules, QueueNotificationRules>();
         services.AddScoped<IUpsertPushSubscriptionHandler, UpsertPushSubscriptionHandler>();
@@ -117,6 +136,8 @@ public static class DependencyInjection
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    // Pin algorithm — never trust token header alg / never allow "none"
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     ValidIssuer = jwt.Issuer,
                     ValidAudience = jwt.Audience,
                     ClockSkew = TimeSpan.FromMinutes(1),

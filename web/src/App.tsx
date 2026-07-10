@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { AdminConsolePage } from "@/features/admin-console/AdminConsolePage";
 import { DoctorConsolePage } from "@/features/doctor-console/DoctorConsolePage";
 import { PatientBookingsPage } from "@/features/patient-bookings/PatientBookingsPage";
 import { PatientQueuePage } from "@/features/patient-queue/PatientQueuePage";
@@ -18,7 +19,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type View = "patient" | "bookings" | "reception" | "doctor" | "owner";
+type View = "patient" | "bookings" | "reception" | "doctor" | "owner" | "admin";
 
 function AppShell() {
   const { t, i18n } = useTranslation();
@@ -49,84 +50,119 @@ function AppShell() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-emerald-50 via-stone-50 to-amber-50">
-      <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-2xl font-semibold tracking-tight">{t("app.name")}</p>
-            <p className="text-muted-foreground text-sm">{t("app.tagline")}</p>
+    <main id="main-content" className="cq-app-shell" lang={i18n.language}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:shadow-sm"
+      >
+        {t("a11y.skipToContent")}
+      </a>
+      <div className="cq-app-frame">
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="cq-brand-mark">{t("app.name")}</p>
+            <p className="text-sm text-muted-foreground">{t("app.tagline")}</p>
           </div>
-          <Button type="button" variant="outline" onClick={toggleLanguage}>
-            {i18n.language.startsWith("ar") ? t("language.en") : t("language.ar")}
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant={view === "patient" ? "default" : "outline"}
+            variant="outline"
+            onClick={toggleLanguage}
+            aria-label={t("language.toggle")}
+          >
+            {i18n.language.startsWith("ar") ? t("language.en") : t("language.ar")}
+          </Button>
+        </header>
+
+        <nav className="cq-nav" aria-label={t("a11y.primaryNav")}>
+          <Button
+            type="button"
+            size="sm"
+            variant={view === "patient" ? "default" : "ghost"}
             onClick={() => onViewChange("patient")}
+            aria-current={view === "patient" ? "page" : undefined}
           >
             {t("nav.patient")}
           </Button>
           <Button
             type="button"
-            variant={view === "bookings" ? "default" : "outline"}
+            size="sm"
+            variant={view === "bookings" ? "default" : "ghost"}
             onClick={() => onViewChange("bookings")}
+            aria-current={view === "bookings" ? "page" : undefined}
           >
             {t("nav.bookings")}
           </Button>
           <Button
             type="button"
-            variant={view === "reception" ? "default" : "outline"}
+            size="sm"
+            variant={view === "reception" ? "default" : "ghost"}
             onClick={() => onViewChange("reception")}
+            aria-current={view === "reception" ? "page" : undefined}
           >
             {t("nav.reception")}
           </Button>
           <Button
             type="button"
-            variant={view === "doctor" ? "default" : "outline"}
+            size="sm"
+            variant={view === "doctor" ? "default" : "ghost"}
             onClick={() => onViewChange("doctor")}
+            aria-current={view === "doctor" ? "page" : undefined}
           >
             {t("nav.doctor")}
           </Button>
           <Button
             type="button"
-            variant={view === "owner" ? "default" : "outline"}
+            size="sm"
+            variant={view === "owner" ? "default" : "ghost"}
             onClick={() => onViewChange("owner")}
+            aria-current={view === "owner" ? "page" : undefined}
           >
             {t("nav.owner")}
           </Button>
-        </div>
+          <Button
+            type="button"
+            size="sm"
+            variant={view === "admin" ? "default" : "ghost"}
+            onClick={() => onViewChange("admin")}
+            aria-current={view === "admin" ? "page" : undefined}
+          >
+            {t("nav.admin")}
+          </Button>
+        </nav>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span>{t("app.clinicId")}</span>
-          <input
-            value={clinicId}
-            onChange={(e) => onClinicIdChange(e.target.value)}
-            placeholder="00000000-0000-0000-0000-000000000000"
-            className="rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
-          />
-        </label>
-      </div>
+        {view !== "admin" ? (
+          <label className="cq-label max-w-md">
+            <span>{t("app.clinicId")}</span>
+            <input
+              value={clinicId}
+              onChange={(e) => onClinicIdChange(e.target.value)}
+              placeholder={t("app.clinicIdPlaceholder")}
+              aria-label={t("app.clinicId")}
+              className="cq-field-mono"
+            />
+          </label>
+        ) : null}
 
-      {clinicId ? (
-        view === "reception" ? (
-          <ReceptionConsolePage clinicId={clinicId} />
-        ) : view === "doctor" ? (
-          <DoctorConsolePage clinicId={clinicId} />
-        ) : view === "owner" ? (
-          <DoctorConsolePage clinicId={clinicId} readOnlyClinical />
-        ) : view === "bookings" ? (
-          <PatientBookingsPage clinicId={clinicId} />
+        {view === "admin" ? (
+          <AdminConsolePage />
+        ) : clinicId ? (
+          view === "reception" ? (
+            <ReceptionConsolePage clinicId={clinicId} />
+          ) : view === "doctor" ? (
+            <DoctorConsolePage clinicId={clinicId} />
+          ) : view === "owner" ? (
+            <DoctorConsolePage clinicId={clinicId} readOnlyClinical />
+          ) : view === "bookings" ? (
+            <PatientBookingsPage clinicId={clinicId} />
+          ) : (
+            <PatientQueuePage clinicId={clinicId} />
+          )
         ) : (
-          <PatientQueuePage clinicId={clinicId} />
-        )
-      ) : (
-        <p className="px-6 text-sm text-muted-foreground" role="status">
-          {t("status.ready")}
-        </p>
-      )}
+          <p className="cq-banner-warning" role="status">
+            {t("status.enterClinicId")}
+          </p>
+        )}
+      </div>
     </main>
   );
 }

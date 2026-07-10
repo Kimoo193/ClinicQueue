@@ -18,4 +18,5 @@ public static class Policies
     public const string SuperAdmin = "SuperAdmin";
     public const string ClinicStaff = "ClinicStaff";
     public const string PatientOrReceptionist = "PatientOrReceptionist";
+    public const string PatientOrDoctor = "PatientOrDoctor";
 }

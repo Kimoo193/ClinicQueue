@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Numbering;
 using ClinicQueue.Domain.Queue;
@@ -27,17 +28,21 @@ public sealed class ResumeQueueSessionHandler : IResumeQueueSessionHandler
 {
     private readonly IAppDbContext _db;
     private readonly IAuditWriter _audit;
+    private readonly IClinicAccessGate _accessGate;
 
-    public ResumeQueueSessionHandler(IAppDbContext db, IAuditWriter audit)
+    public ResumeQueueSessionHandler(IAppDbContext db, IAuditWriter audit, IClinicAccessGate accessGate)
     {
         _db = db;
         _audit = audit;
+        _accessGate = accessGate;
     }
 
     public async Task<ResumeQueueSessionResponse> HandleAsync(
         ResumeQueueSessionCommand command,
         CancellationToken cancellationToken = default)
     {
+        await _accessGate.EnsureClinicActiveAsync(command.ClinicId, cancellationToken);
+
         var session = await _db.QueueSessions
             .FirstOrDefaultAsync(
                 s => s.Id == command.QueueSessionId && s.ClinicId == command.ClinicId,

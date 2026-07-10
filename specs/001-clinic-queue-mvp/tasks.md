@@ -241,10 +241,10 @@ write-restriction (grace for an already-open session) and a 7-day renewal notice
 expire a subscription mid-open-session and confirm the session runs to close while
 new bookings/sessions are blocked.
 
-- [ ] T067 [P] [US7] Integration test: suspended clinic blocks staff ops; expired subscription blocks new bookings/sessions but lets an already-open session finish in `tests/ClinicQueue.IntegrationTests/Platform/SubscriptionTests.cs` (FR-100, FR-102)
-- [ ] T068 [P] [US7] Implement Platform module clinic lifecycle (list, activate, suspend) in `src/ClinicQueue.Application/Platform/Clinics/` and `src/ClinicQueue.Api/Endpoints/Platform/ClinicAdminEndpoints.cs` (FR-100)
-- [ ] T069 [US7] Implement subscription plan management + expiry write-restriction (open-session grace) + 7-day renewal-notice Hangfire job in `src/ClinicQueue.Application/Platform/Subscriptions/` and `src/ClinicQueue.Infrastructure/Jobs/RenewalNoticeJob.cs` (FR-101, FR-102, FR-103)
-- [ ] T070 [P] [US7] Build the super-admin console web UI (clinics list, activate/suspend, subscription management) in `web/src/features/admin-console/`
+- [X] T067 [P] [US7] Integration test: suspended clinic blocks staff ops; expired subscription blocks new bookings/sessions but lets an already-open session finish in `tests/ClinicQueue.IntegrationTests/Platform/SubscriptionTests.cs` (FR-100, FR-102)
+- [X] T068 [P] [US7] Implement Platform module clinic lifecycle (list, activate, suspend) in `src/ClinicQueue.Application/Platform/Clinics/` and `src/ClinicQueue.Api/Endpoints/Platform/ClinicAdminEndpoints.cs` (FR-100)
+- [X] T069 [US7] Implement subscription plan management + expiry write-restriction (open-session grace) + 7-day renewal-notice Hangfire job in `src/ClinicQueue.Application/Platform/Subscriptions/` and `src/ClinicQueue.Infrastructure/Jobs/RenewalNoticeJob.cs` (FR-101, FR-102, FR-103)
+- [X] T070 [P] [US7] Build the super-admin console web UI (clinics list, activate/suspend, subscription management) in `web/src/features/admin-console/`
 
 **Checkpoint**: Platform operator can run the business.
 
@@ -258,8 +258,8 @@ profile.
 **Independent Test**: A doctor records a visit + prescription; the patient views both
 under the correct clinic and maintains their profile.
 
-- [ ] T071 [P] [US8] Implement PatientProfile read/update endpoint (self) in `src/ClinicQueue.Api/Endpoints/Medical/ProfileEndpoints.cs` (FR-080)
-- [ ] T072 [US8] Implement patient per-clinic visit/prescription history endpoint in `src/ClinicQueue.Api/Endpoints/Medical/MedicalEndpoints.cs` (FR-083, FR-086)
+- [X] T071 [P] [US8] Implement PatientProfile read/update endpoint (self) in `src/ClinicQueue.Api/Endpoints/Medical/ProfileEndpoints.cs` (FR-080)
+- [X] T072 [US8] Implement patient per-clinic visit/prescription history endpoint in `src/ClinicQueue.Api/Endpoints/Medical/MedicalEndpoints.cs` (FR-083, FR-086)
 - [ ] T073 [P] [US8] Build the patient medical-history + profile web UI in `web/src/features/patient-medical/`
 
 **Checkpoint**: Patient continuity-of-care surface complete.
@@ -274,9 +274,9 @@ their booking; send morning-of reminders.
 **Independent Test**: Mark a patient absent to the threshold without cancellation;
 confirm the flag appears and booking can be restricted.
 
-- [ ] T074 [P] [US9] Implement repeated-absence flag (per-clinic threshold, default 2) + booking-restriction action in `src/ClinicQueue.Application/Queue/Booking/AbsencePolicyService.cs` (FR-047)
-- [ ] T075 [US9] Implement the morning-of booking-day reminder Hangfire job in `src/ClinicQueue.Infrastructure/Jobs/BookingReminderJob.cs` (FR-048)
-- [ ] T076 [P] [US9] Surface the repeated-absence flag + restrict action in the reception web UI in `web/src/features/reception-console/`
+- [X] T074 [P] [US9] Implement repeated-absence flag (per-clinic threshold, default 2) + booking-restriction action in `src/ClinicQueue.Application/Queue/Booking/AbsencePolicyService.cs` (FR-047)
+- [X] T075 [US9] Implement the morning-of booking-day reminder Hangfire job in `src/ClinicQueue.Infrastructure/Jobs/BookingReminderJob.cs` (FR-048)
+- [X] T076 [P] [US9] Surface the repeated-absence flag + restrict action in the reception web UI in `web/src/features/reception-console/`
 
 **Checkpoint**: No-show safeguard active.
 
@@ -289,9 +289,9 @@ confirm the flag appears and booking can be restricted.
 **Independent Test**: Generate platform analytics after multi-clinic activity;
 trigger a clinic export and confirm it contains only that clinic's data.
 
-- [ ] T077 [P] [US10] Implement platform-wide usage + revenue analytics in `src/ClinicQueue.Api/Endpoints/Platform/AnalyticsEndpoints.cs` (FR-104)
-- [ ] T078 [US10] Implement clinic self-service export (patients, appointments, visits — clinic-scoped only) in `src/ClinicQueue.Application/Platform/Export/ClinicExportHandler.cs` (FR-105)
-- [ ] T079 [P] [US10] Add analytics + export UI to the super-admin console in `web/src/features/admin-console/`
+- [X] T077 [P] [US10] Implement platform-wide usage + revenue analytics in `src/ClinicQueue.Api/Endpoints/Platform/AnalyticsEndpoints.cs` (FR-104)
+- [X] T078 [US10] Implement clinic self-service export (patients, appointments, visits — clinic-scoped only) in `src/ClinicQueue.Application/Platform/Export/ClinicExportHandler.cs` (FR-105)
+- [X] T079 [P] [US10] Add analytics + export UI to the super-admin console in `web/src/features/admin-console/`
 
 **Checkpoint**: All 10 user stories complete.
 
@@ -301,14 +301,14 @@ trigger a clinic export and confirm it contains only that clinic's data.
 
 **Purpose**: Release-gate hardening and validation across all stories.
 
-- [ ] T080 Extend the tenant-isolation test sweep (T023) to every clinic-scoped entity — release gate (SC-005, constitution Principle I)
-- [ ] T081 [P] Load test: ≥500 concurrent SignalR connections, read p95 ≤300ms, position update ≤2s in `tests/ClinicQueue.IntegrationTests/Performance/` (SC-006, SC-007, SC-008)
-- [ ] T081a [P] Configure uptime + health monitoring and alerting against the `/health` endpoints (target ≥99.5% during operating hours) in `docker/` (SC-010)
-- [ ] T082 [P] Security pass: verify rate limiting, security headers, CORS, TLS-only, and no secrets in code (SC-012, SC-013)
-- [ ] T083 [P] Backup/restore drill: daily encrypted off-site backups (7/4/6 retention) with a verified restore, documented in `docker/` (SC-015)
-- [ ] T084 [P] Generate OpenAPI documentation for all `/api/v1/` endpoints in `src/ClinicQueue.Api/`
-- [ ] T085 [P] Accessibility + RTL/i18n QA pass across all web surfaces (no hardcoded strings, ar/en complete) in `web/`
-- [ ] T086 Run the `quickstart.md` end-to-end validation scenarios (all 7) against the Docker Compose stack
+- [X] T080 Extend the tenant-isolation test sweep (T023) to every clinic-scoped entity — release gate (SC-005, constitution Principle I)
+- [X] T081 [P] Load test: ≥500 concurrent SignalR connections, read p95 ≤300ms, position update ≤2s in `tests/ClinicQueue.IntegrationTests/Performance/` (SC-006, SC-007, SC-008)
+- [X] T081a [P] Configure uptime + health monitoring and alerting against the `/health` endpoints (target ≥99.5% during operating hours) in `docker/` (SC-010)
+- [X] T082 [P] Security pass: verify rate limiting, security headers, CORS, TLS-only, and no secrets in code (SC-012, SC-013)
+- [X] T083 [P] Backup/restore drill: daily encrypted off-site backups (7/4/6 retention) with a verified restore, documented in `docker/` (SC-015)
+- [X] T084 [P] Generate OpenAPI documentation for all `/api/v1/` endpoints in `src/ClinicQueue.Api/`
+- [X] T085 [P] Accessibility + RTL/i18n QA pass across all web surfaces (no hardcoded strings, ar/en complete) in `web/`
+- [X] T086 Run the `quickstart.md` end-to-end validation scenarios (all 7) against the Docker Compose stack
 
 ---
 

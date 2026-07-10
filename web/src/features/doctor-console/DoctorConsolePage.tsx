@@ -146,27 +146,25 @@ export function DoctorConsolePage({
   const isPaused = session?.status === "Paused";
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {t("doctor.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">{t("doctor.subtitle")}</p>
+    <section className="cq-page">
+      <header className="cq-page-header">
+        <h1 className="cq-page-title">{t("doctor.title")}</h1>
+        <p className="cq-page-subtitle">{t("doctor.subtitle")}</p>
         {readOnlyClinical ? (
-          <p className="text-sm text-amber-800" role="status">
+          <p className="cq-banner-warning" role="status">
             {t("doctor.readOnlyBanner")}
           </p>
         ) : null}
       </header>
 
       {actionError ? (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="cq-alert" role="alert">
           {actionError}
         </p>
       ) : null}
 
-      <div className="space-y-3 border-b border-stone-200 pb-8">
-        <h2 className="text-lg font-medium">{t("doctor.emergency")}</h2>
+      <div className="cq-section">
+        <h2 className="cq-section-title">{t("doctor.emergency")}</h2>
         {sessionQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t("doctor.loading")}</p>
         ) : !session ? (
@@ -175,9 +173,7 @@ export function DoctorConsolePage({
           <div className="space-y-3">
             <p className="text-sm">
               {t("doctor.sessionStatus", { status: session.status })}
-              {session.pauseReason
-                ? ` — ${session.pauseReason}`
-                : ""}
+              {session.pauseReason ? ` — ${session.pauseReason}` : ""}
             </p>
             {!isPaused ? (
               <form
@@ -190,13 +186,13 @@ export function DoctorConsolePage({
                   });
                 }}
               >
-                <label className="flex flex-1 flex-col gap-1 text-sm">
+                <label className="cq-label flex-1">
                   <span>{t("doctor.pauseReason")}</span>
                   <input
                     required
                     value={pauseReason}
                     onChange={(e) => setPauseReason(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="cq-field"
                   />
                 </label>
                 <Button type="submit" disabled={pauseMutation.isPending}>
@@ -220,14 +216,14 @@ export function DoctorConsolePage({
         )}
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-medium">{t("doctor.clinical")}</h2>
+      <div className="cq-section">
+        <h2 className="cq-section-title">{t("doctor.clinical")}</h2>
         {queueQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t("doctor.loading")}</p>
         ) : appointments.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("doctor.empty")}</p>
         ) : (
-          <ul className="divide-y divide-stone-200 border-y border-stone-200">
+          <ul className="cq-list">
             {appointments.map((row) => (
               <li
                 key={row.appointmentId}
@@ -246,7 +242,7 @@ export function DoctorConsolePage({
                 </div>
                 <Button
                   type="button"
-                  size="sm"
+                  className="cq-touch-btn"
                   variant={
                     selectedAppointmentId === row.appointmentId
                       ? "default"
@@ -263,8 +259,8 @@ export function DoctorConsolePage({
       </div>
 
       {selectedAppointmentId ? (
-        <div className="space-y-6 border-t border-stone-200 pt-6">
-          <h3 className="text-base font-medium">{t("doctor.visitForm")}</h3>
+        <div className="cq-section space-y-6">
+          <h3 className="cq-section-title">{t("doctor.visitForm")}</h3>
           {loadedVisit ? (
             <div className="space-y-4 text-sm">
               <p>
@@ -292,37 +288,45 @@ export function DoctorConsolePage({
               ) : !readOnlyClinical ? (
                 <form
                   onSubmit={onIssuePrescription}
-                  className="flex flex-col gap-2"
+                  className="flex flex-col gap-3"
                 >
                   <h4 className="font-medium">{t("doctor.issuePrescription")}</h4>
-                  <input
-                    required
-                    placeholder={t("doctor.drug")}
-                    value={drug}
-                    onChange={(e) => setDrug(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    required
-                    placeholder={t("doctor.dose")}
-                    value={dose}
-                    onChange={(e) => setDose(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    required
-                    placeholder={t("doctor.frequency")}
-                    value={frequency}
-                    onChange={(e) => setFrequency(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    required
-                    placeholder={t("doctor.duration")}
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
+                  <label className="cq-label">
+                    <span>{t("doctor.drug")}</span>
+                    <input
+                      required
+                      value={drug}
+                      onChange={(e) => setDrug(e.target.value)}
+                      className="cq-field"
+                    />
+                  </label>
+                  <label className="cq-label">
+                    <span>{t("doctor.dose")}</span>
+                    <input
+                      required
+                      value={dose}
+                      onChange={(e) => setDose(e.target.value)}
+                      className="cq-field"
+                    />
+                  </label>
+                  <label className="cq-label">
+                    <span>{t("doctor.frequency")}</span>
+                    <input
+                      required
+                      value={frequency}
+                      onChange={(e) => setFrequency(e.target.value)}
+                      className="cq-field"
+                    />
+                  </label>
+                  <label className="cq-label">
+                    <span>{t("doctor.duration")}</span>
+                    <input
+                      required
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      className="cq-field"
+                    />
+                  </label>
                   <Button type="submit">{t("doctor.savePrescription")}</Button>
                 </form>
               ) : null}
@@ -333,22 +337,22 @@ export function DoctorConsolePage({
             </p>
           ) : (
             <form onSubmit={onCreateVisit} className="flex flex-col gap-3">
-              <label className="flex flex-col gap-1 text-sm">
+              <label className="cq-label">
                 <span>{t("doctor.diagnosis")}</span>
                 <input
                   required
                   value={diagnosis}
                   onChange={(e) => setDiagnosis(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="cq-field"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
+              <label className="cq-label">
                 <span>{t("doctor.notes")}</span>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="cq-field"
                 />
               </label>
               <Button type="submit">{t("doctor.saveVisit")}</Button>

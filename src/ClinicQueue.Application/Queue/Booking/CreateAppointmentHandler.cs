@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Sessions;
 using ClinicQueue.Domain.Identity;
@@ -47,15 +48,18 @@ public sealed class CreateAppointmentHandler : ICreateAppointmentHandler
     private readonly IAppDbContext _db;
     private readonly IQueueSessionService _sessions;
     private readonly IQueueNotificationRules _notificationRules;
+    private readonly IClinicAccessGate _accessGate;
 
     public CreateAppointmentHandler(
         IAppDbContext db,
         IQueueSessionService sessions,
-        IQueueNotificationRules notificationRules)
+        IQueueNotificationRules notificationRules,
+        IClinicAccessGate accessGate)
     {
         _db = db;
         _sessions = sessions;
         _notificationRules = notificationRules;
+        _accessGate = accessGate;
     }
 
     public async Task<CreateAppointmentResult> HandleAsync(
@@ -67,14 +71,11 @@ public sealed class CreateAppointmentHandler : ICreateAppointmentHandler
             throw new ArgumentOutOfRangeException(nameof(command.CompanionsCount));
         }
 
+        await _accessGate.EnsureCanAcceptNewBookingsAsync(command.ClinicId, cancellationToken);
+
         var clinic = await _db.Clinics.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == command.ClinicId, cancellationToken)
             ?? throw new InvalidOperationException("Clinic not found.");
-
-        if (clinic.Status != ClinicStatus.Active)
-        {
-            throw new InvalidOperationException("Clinic is not accepting bookings.");
-        }
 
         EnsureBookingDayIsClinicToday(clinic.Timezone, command.Day);
 

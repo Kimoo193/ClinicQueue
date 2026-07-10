@@ -11,6 +11,7 @@ import {
   confirmArrival,
   instantEntry,
   listTodayAppointments,
+  restrictBooking,
   setAppointmentType,
   type ReceptionAppointment,
 } from "./api";
@@ -103,6 +104,15 @@ export function ReceptionConsolePage({
     onError: (error: Error) => setActionError(error.message),
   });
 
+  const restrictMutation = useMutation({
+    mutationFn: restrictBooking,
+    onSuccess: async () => {
+      setActionError(null);
+      await invalidate();
+    },
+    onError: (error: Error) => setActionError(error.message),
+  });
+
   const onBehalfSubmit = (event: FormEvent) => {
     event.preventDefault();
     onBehalfMutation.mutate({
@@ -127,28 +137,26 @@ export function ReceptionConsolePage({
   const appointments = queueQuery.data ?? [];
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-4 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {t("reception.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">{t("reception.subtitle")}</p>
+    <section className="cq-page">
+      <header className="cq-page-header">
+        <h1 className="cq-page-title">{t("reception.title")}</h1>
+        <p className="cq-page-subtitle">{t("reception.subtitle")}</p>
       </header>
 
       {actionError ? (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="cq-alert" role="alert">
           {actionError}
         </p>
       ) : null}
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-medium">{t("reception.queue")}</h2>
+      <div className="cq-section">
+        <h2 className="cq-section-title">{t("reception.queue")}</h2>
         {queueQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t("reception.loading")}</p>
         ) : appointments.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("reception.empty")}</p>
         ) : (
-          <ul className="divide-y divide-stone-200 border-y border-stone-200">
+          <ul className="cq-list">
             {appointments.map((row) => (
               <QueueRow
                 key={row.appointmentId}
@@ -156,7 +164,8 @@ export function ReceptionConsolePage({
                 busy={
                   confirmMutation.isPending ||
                   callMutation.isPending ||
-                  typeMutation.isPending
+                  typeMutation.isPending ||
+                  restrictMutation.isPending
                 }
                 onConfirm={() => confirmMutation.mutate(row.appointmentId)}
                 onCall={() => callMutation.mutate(row.appointmentId)}
@@ -166,41 +175,44 @@ export function ReceptionConsolePage({
                     type: row.type === "Urgent" ? "Normal" : "Urgent",
                   })
                 }
+                onRestrict={() => {
+                  if (row.patientMembershipId) {
+                    restrictMutation.mutate(row.patientMembershipId);
+                  }
+                }}
               />
             ))}
           </ul>
         )}
       </div>
 
-      <form
-        onSubmit={onBehalfSubmit}
-        className="flex flex-col gap-3 border-t border-stone-200 pt-6"
-      >
-        <h2 className="text-lg font-medium">{t("reception.onBehalf")}</h2>
-        <label className="flex flex-col gap-1 text-sm">
+      <form onSubmit={onBehalfSubmit} className="cq-section gap-3">
+        <h2 className="cq-section-title">{t("reception.onBehalf")}</h2>
+        <label className="cq-label">
           <span>{t("reception.patientRef")}</span>
           <input
             required
             value={patientRef}
             onChange={(e) => setPatientRef(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
-            placeholder="membership-guid"
+            className="cq-field-mono"
+            placeholder={t("reception.membershipGuidPlaceholder")}
+            aria-label={t("reception.patientRef")}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="cq-label">
           <span>{t("reception.type")}</span>
           <select
             value={onBehalfType}
             onChange={(e) =>
               setOnBehalfType(e.target.value as "Normal" | "Urgent")
             }
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="cq-field"
           >
             <option value="Normal">{t("reception.normal")}</option>
             <option value="Urgent">{t("reception.urgent")}</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="cq-label">
           <span>{t("reception.companions")}</span>
           <input
             type="number"
@@ -208,7 +220,7 @@ export function ReceptionConsolePage({
             max={20}
             value={companions}
             onChange={(e) => setCompanions(Number(e.target.value))}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="cq-field"
           />
         </label>
         <Button type="submit" disabled={onBehalfMutation.isPending}>
@@ -218,29 +230,27 @@ export function ReceptionConsolePage({
         </Button>
       </form>
 
-      <form
-        onSubmit={onInstantSubmit}
-        className="flex flex-col gap-3 border-t border-stone-200 pt-6"
-      >
-        <h2 className="text-lg font-medium">{t("reception.instantEntry")}</h2>
-        <label className="flex flex-col gap-1 text-sm">
+      <form onSubmit={onInstantSubmit} className="cq-section gap-3">
+        <h2 className="cq-section-title">{t("reception.instantEntry")}</h2>
+        <label className="cq-label">
           <span>{t("reception.patientRef")}</span>
           <input
             required
             value={instantPatientRef}
             onChange={(e) => setInstantPatientRef(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
-            placeholder="membership-guid"
+            className="cq-field-mono"
+            placeholder={t("reception.membershipGuidPlaceholder")}
+            aria-label={t("reception.patientRef")}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="cq-label">
           <span>{t("reception.reason")}</span>
           <textarea
             required
             value={instantReason}
             onChange={(e) => setInstantReason(e.target.value)}
             rows={2}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="cq-field"
           />
         </label>
         <Button type="submit" disabled={instantMutation.isPending}>
@@ -259,22 +269,29 @@ function QueueRow({
   onConfirm,
   onCall,
   onToggleUrgent,
+  onRestrict,
 }: {
   row: ReceptionAppointment;
   busy: boolean;
   onConfirm: () => void;
   onCall: () => void;
   onToggleUrgent: () => void;
+  onRestrict: () => void;
 }) {
   const { t } = useTranslation();
   const canConfirm = row.status === "Booked";
   const canCall = row.status === "Present" && row.realNumber != null;
   const canToggleType = row.realNumber == null && row.status === "Booked";
+  const isRestricted = row.membershipStatus === "Restricted";
+  const canRestrict =
+    Boolean(row.patientMembershipId) &&
+    Boolean(row.repeatedAbsenceFlag) &&
+    !isRestricted;
 
   return (
-    <li className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1 text-sm">
-        <p className="font-medium">
+        <p className="font-medium tabular-nums">
           {t("reception.tempNumber", { number: row.temporaryNumber })}
           {row.realNumber != null
             ? ` · ${t("reception.realNumber", { number: row.realNumber })}`
@@ -284,6 +301,10 @@ function QueueRow({
           {row.status} · {row.type}
           {row.possibleUrgentFlag ? ` · ${t("reception.flaggedUrgent")}` : ""}
           {row.isInstantEntry ? ` · ${t("reception.instantBadge")}` : ""}
+          {row.repeatedAbsenceFlag
+            ? ` · ${t("reception.repeatedAbsence", { count: row.absenceCount ?? 0 })}`
+            : ""}
+          {isRestricted ? ` · ${t("reception.restricted")}` : ""}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -291,7 +312,7 @@ function QueueRow({
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            className="cq-touch-btn"
             disabled={busy}
             onClick={onToggleUrgent}
           >
@@ -303,7 +324,7 @@ function QueueRow({
         {canConfirm ? (
           <Button
             type="button"
-            size="sm"
+            className="cq-touch-btn"
             disabled={busy}
             onClick={onConfirm}
           >
@@ -311,8 +332,24 @@ function QueueRow({
           </Button>
         ) : null}
         {canCall ? (
-          <Button type="button" size="sm" disabled={busy} onClick={onCall}>
+          <Button
+            type="button"
+            className="cq-touch-btn"
+            disabled={busy}
+            onClick={onCall}
+          >
             {t("reception.callNext")}
+          </Button>
+        ) : null}
+        {canRestrict ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="cq-touch-btn"
+            disabled={busy}
+            onClick={onRestrict}
+          >
+            {t("reception.restrictBooking")}
           </Button>
         ) : null}
       </div>

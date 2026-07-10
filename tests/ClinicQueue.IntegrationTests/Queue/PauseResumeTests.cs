@@ -1,4 +1,5 @@
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Emergency;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Domain.Notifications;
@@ -26,10 +27,10 @@ public sealed class PauseResumeTests(Infrastructure.PostgresFixture fixture)
     }
 
     private static PauseQueueSessionHandler CreatePauseHandler(AppDbContext db) =>
-        new(db, new EfAuditWriter(db));
+        new(db, new EfAuditWriter(db), new ClinicAccessGate(db));
 
     private static ResumeQueueSessionHandler CreateResumeHandler(AppDbContext db) =>
-        new(db, new EfAuditWriter(db));
+        new(db, new EfAuditWriter(db), new ClinicAccessGate(db));
 
     [Fact]
     public async Task Pause_notifies_booked_and_present_patients_and_preserves_positions()

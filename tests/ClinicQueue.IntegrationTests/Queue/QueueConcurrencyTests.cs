@@ -1,4 +1,5 @@
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Numbering;
@@ -30,19 +31,23 @@ public sealed class QueueConcurrencyTests(Infrastructure.PostgresFixture fixture
     private static AssignRealNumberHandler CreateAssignHandler(AppDbContext db)
     {
         var countAhead = new CountAheadService(db);
+        var gate = new ClinicAccessGate(db);
         return new AssignRealNumberHandler(
             db,
             new UrgentInjectionService(),
-            new QueueNotificationRules(db, countAhead));
+            new QueueNotificationRules(db, countAhead),
+            gate);
     }
 
     private static CreateAppointmentHandler CreateBookingHandler(AppDbContext db)
     {
         var countAhead = new CountAheadService(db);
+        var gate = new ClinicAccessGate(db);
         return new CreateAppointmentHandler(
             db,
-            new QueueSessionService(db),
-            new QueueNotificationRules(db, countAhead));
+            new QueueSessionService(db, gate),
+            new QueueNotificationRules(db, countAhead),
+            gate);
     }
 
     private static DateOnly ClinicToday() => ClinicClock.Today("Africa/Cairo");

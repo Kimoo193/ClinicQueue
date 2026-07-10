@@ -1,6 +1,7 @@
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Domain.Medical;
 using ClinicQueue.Domain.Notifications;
+using ClinicQueue.Domain.Platform;
 using ClinicQueue.Domain.Queue;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,7 @@ public interface IAppDbContext
     DbSet<User> Users { get; }
     DbSet<Clinic> Clinics { get; }
     DbSet<ClinicMembership> ClinicMemberships { get; }
+    DbSet<Subscription> Subscriptions { get; }
     DbSet<Dependent> Dependents { get; }
     DbSet<QueueSession> QueueSessions { get; }
     DbSet<Appointment> Appointments { get; }
@@ -22,6 +24,7 @@ public interface IAppDbContext
     DbSet<PatientProfile> PatientProfiles { get; }
     DbSet<Visit> Visits { get; }
     DbSet<Prescription> Prescriptions { get; }
+    DbSet<ClinicExportJob> ClinicExportJobs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

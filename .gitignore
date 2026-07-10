@@ -5,6 +5,18 @@
 
 # dotenv files
 .env
+docker/.env
+
+# TLS private material and encrypted DB backups (never commit)
+*.pem
+*.key
+*.pfx
+!docker/certs/README.md
+docker/certs/fullchain.pem
+docker/certs/privkey.pem
+backups/
+docker/backups/
+**/*.sql.gpg
 
 # User-specific files
 *.rsuser

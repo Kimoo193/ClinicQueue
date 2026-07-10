@@ -1,4 +1,5 @@
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Platform;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Positioning;
@@ -29,10 +30,12 @@ public sealed class UnifiedHistoryTests(Infrastructure.PostgresFixture fixture)
     private static CreateAppointmentHandler CreateBookingHandler(AppDbContext db)
     {
         var countAhead = new CountAheadService(db);
+        var gate = new ClinicAccessGate(db);
         return new CreateAppointmentHandler(
             db,
-            new QueueSessionService(db),
-            new QueueNotificationRules(db, countAhead));
+            new QueueSessionService(db, gate),
+            new QueueNotificationRules(db, countAhead),
+            gate);
     }
 
     private static ListPatientAppointmentsHandler CreateListHandler(AppDbContext db) =>

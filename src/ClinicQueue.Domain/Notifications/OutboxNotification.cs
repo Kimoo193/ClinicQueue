@@ -16,7 +16,9 @@ public enum NotificationType
     YourTurn = 2,
     PauseResume = 3,
     CarryOver = 4,
-    SubscriptionExpiring = 5
+    SubscriptionExpiring = 5,
+    /// <summary>Morning-of booking-day reminder requesting confirmation (FR-048).</summary>
+    BookingReminder = 6
 }
 
 public class OutboxNotification : ClinicScopedEntity

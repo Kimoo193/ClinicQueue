@@ -17,22 +17,27 @@ public static class AuthEndpoints
     {
         var auth = group.MapGroup("/auth");
 
-        auth.MapPost("/register", RegisterAsync)
-            .AllowAnonymous()
-            .WithName("Register");
-
         auth.MapPost("/login", LoginAsync)
             .AllowAnonymous()
             .RequireRateLimiting(Middleware.RateLimitingPolicies.Login)
-            .WithName("Login");
+            .WithName("Login")
+            .WithSummary("Authenticate and issue access/refresh cookies");
+
+        auth.MapPost("/register", RegisterAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Login)
+            .WithName("Register")
+            .WithSummary("Register a new global patient identity");
 
         auth.MapPost("/refresh", RefreshAsync)
             .AllowAnonymous()
-            .WithName("Refresh");
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Login)
+            .WithName("Refresh")
+            .WithSummary("Rotate refresh token and issue a new access cookie");
 
         auth.MapPost("/logout", LogoutAsync)
-            .WithName("Logout");
-
+            .WithName("Logout")
+            .WithSummary("Revoke refresh token and clear auth cookies");
         return group;
     }
 
