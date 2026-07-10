@@ -1,0 +1,15 @@
+# Publish DB/Redis ports for local API+Vite (backend/frontend separate from full stack).
+# Host port 5433 avoids clashing with a system Postgres already bound to 5432.
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+  redis:
+    ports:
+      - "6379:6379"
+    # Match appsettings.Development.json (no password)
+    command: ["redis-server"]
+    environment:
+      REDISCLI_AUTH: ""
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]

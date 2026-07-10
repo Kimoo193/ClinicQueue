@@ -4,6 +4,7 @@ using ClinicQueue.Domain.Medical;
 using ClinicQueue.Domain.Notifications;
 using ClinicQueue.Domain.Platform;
 using ClinicQueue.Domain.Queue;
+using ClinicQueue.Domain.Reporting;
 using ClinicQueue.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -60,7 +61,9 @@ public sealed class TenantIsolationTests(Infrastructure.PostgresFixture fixture)
         Guid PushAId,
         Guid PushBId,
         Guid ExportAId,
-        Guid ExportBId);
+        Guid ExportBId,
+        Guid RatingAId,
+        Guid RatingBId);
 
     private async Task<SeededTenants> SeedTwoClinicsAsync(AppDbContext setup)
     {
@@ -298,6 +301,23 @@ public sealed class TenantIsolationTests(Infrastructure.PostgresFixture fixture)
         setup.Prescriptions.AddRange(prescriptionA, prescriptionB);
         await setup.SaveChangesAsync();
 
+        var ratingA = new Rating
+        {
+            ClinicId = clinicA,
+            AppointmentId = appointmentA.Id,
+            Score = 5,
+            Comment = "a"
+        };
+        var ratingB = new Rating
+        {
+            ClinicId = clinicB,
+            AppointmentId = appointmentB.Id,
+            Score = 4,
+            Comment = "b"
+        };
+        setup.Ratings.AddRange(ratingA, ratingB);
+        await setup.SaveChangesAsync();
+
         return new SeededTenants(
             clinicA,
             clinicB,
@@ -326,7 +346,9 @@ public sealed class TenantIsolationTests(Infrastructure.PostgresFixture fixture)
             pushA.Id,
             pushB.Id,
             exportA.Id,
-            exportB.Id);
+            exportB.Id,
+            ratingA.Id,
+            ratingB.Id);
     }
 
     private static async Task AssertTenantScopedAsync<T>(
@@ -383,6 +405,8 @@ public sealed class TenantIsolationTests(Infrastructure.PostgresFixture fixture)
             tenantContext, seed.ClinicA, seed.ClinicB, seed.PrescriptionAId, seed.PrescriptionBId);
         await AssertTenantScopedAsync<ClinicExportJob>(
             tenantContext, seed.ClinicA, seed.ClinicB, seed.ExportAId, seed.ExportBId);
+        await AssertTenantScopedAsync<Rating>(
+            tenantContext, seed.ClinicA, seed.ClinicB, seed.RatingAId, seed.RatingBId);
     }
 
     [Fact]
@@ -424,6 +448,7 @@ public sealed class TenantIsolationTests(Infrastructure.PostgresFixture fixture)
             nameof(Prescription),
             nameof(PushSubscription),
             nameof(QueueSession),
+            nameof(Rating),
             nameof(Subscription),
             nameof(Visit)
         ];

@@ -36,6 +36,9 @@ public class Clinic : BaseEntity
 
     public ClinicStatus Status { get; set; } = ClinicStatus.Active;
 
+    /// <summary>Average of post-visit ratings (FR-095); null when no ratings yet.</summary>
+    public double? AggregateRating { get; set; }
+
     public ICollection<ClinicMembership> Memberships { get; set; } = new List<ClinicMembership>();
 
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();

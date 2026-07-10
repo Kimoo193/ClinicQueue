@@ -3,6 +3,7 @@ using ClinicQueue.Domain.Medical;
 using ClinicQueue.Domain.Notifications;
 using ClinicQueue.Domain.Platform;
 using ClinicQueue.Domain.Queue;
+using ClinicQueue.Domain.Reporting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicQueue.Application.Abstractions;
@@ -25,6 +26,7 @@ public interface IAppDbContext
     DbSet<Visit> Visits { get; }
     DbSet<Prescription> Prescriptions { get; }
     DbSet<ClinicExportJob> ClinicExportJobs { get; }
+    DbSet<Rating> Ratings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

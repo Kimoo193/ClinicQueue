@@ -297,7 +297,8 @@ public static class ArrivalEndpoints
                 a.RealNumber,
                 a.IsInstantEntry,
                 a.PossibleUrgentFlag,
-                a.CompanionsCount
+                a.CompanionsCount,
+                DepositConfirmed = a.DepositConfirmedAt != null
             })
             .ToListAsync(cancellationToken);
 
@@ -333,7 +334,8 @@ public static class ArrivalEndpoints
                 a.CompanionsCount,
                 flag?.IsFlagged ?? false,
                 flag?.AbsenceCount ?? 0,
-                flag?.MembershipStatus);
+                flag?.MembershipStatus,
+                a.DepositConfirmed);
         }).ToList();
 
         return Results.Ok(appointments);

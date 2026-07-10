@@ -1,10 +1,6 @@
-namespace ClinicQueue.Infrastructure.Identity;
+using ClinicQueue.Application.Abstractions;
 
-public interface IPasswordHasher
-{
-    string Hash(string password);
-    bool Verify(string password, string passwordHash);
-}
+namespace ClinicQueue.Infrastructure.Identity;
 
 /// <summary>
 /// BCrypt password hashing with work factor ≥ 12 (FR-011).

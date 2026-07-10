@@ -207,7 +207,7 @@ relative order, ahead of new bookings.
 - [X] T057 [US5] Implement the deposit booking method (screenshot upload or pay-at-clinic) with receptionist manual confirmation in `src/ClinicQueue.Application/Queue/Booking/DepositBookingHandler.cs` (FR-042)
 - [X] T058 [US5] Implement close-day + unserved-list and carry-over use cases (front placement, preserve prior-day relative order) + endpoints with carry-over outbox triggers in `src/ClinicQueue.Api/Endpoints/Queue/DayCloseEndpoints.cs` (FR-060–FR-064, FR-074)
 - [X] T059 [US5] Implement the deposit no-show auto-carry-over Hangfire job in `src/ClinicQueue.Infrastructure/Jobs/DepositCarryOverJob.cs` (FR-065)
-- [ ] T060 [P] [US5] Build the reception day-close / carry-over web UI (deposit confirm, unserved list, carry-over/cancel actions) in `web/src/features/reception-dayclose/`
+- [X] T060 [P] [US5] Build the reception day-close / carry-over web UI (deposit confirm, unserved list, carry-over/cancel actions) in `web/src/features/reception-dayclose/`
 
 **Checkpoint**: Full daily operational cycle works end to end.
 
@@ -221,12 +221,12 @@ rating, and receptionist account management.
 **Independent Test**: After several days of activity with no-shows and ratings,
 confirm reports are accurate and the owner can invite a receptionist.
 
-- [ ] T061 [P] [US6] Integration test: absence-rate and volume report calculations over a period in `tests/ClinicQueue.IntegrationTests/Reporting/ReportsTests.cs` (FR-090, FR-091)
-- [ ] T062 [P] [US6] Implement Reporting module use cases (volume, absence rate, peak hours, deposit revenue) in `src/ClinicQueue.Application/Reporting/`
-- [ ] T063 [US6] Implement report endpoints in `src/ClinicQueue.Api/Endpoints/Reporting/ReportEndpoints.cs` (FR-090–FR-093)
-- [ ] T064 [P] [US6] Implement post-visit rating submission + aggregate clinic rating (surfaced in clinic search) in `src/ClinicQueue.Api/Endpoints/Reporting/RatingEndpoints.cs` (FR-094, FR-095)
-- [ ] T065 [US6] Implement ClinicOwner invite/manage receptionist accounts in `src/ClinicQueue.Api/Endpoints/Identity/MembershipEndpoints.cs` (FR-015)
-- [ ] T066 [P] [US6] Build the owner reports + staff-management web UI in `web/src/features/owner-reports/`
+- [X] T061 [P] [US6] Integration test: absence-rate and volume report calculations over a period in `tests/ClinicQueue.IntegrationTests/Reporting/ReportsTests.cs` (FR-090, FR-091)
+- [X] T062 [P] [US6] Implement Reporting module use cases (volume, absence rate, peak hours, deposit revenue) in `src/ClinicQueue.Application/Reporting/`
+- [X] T063 [US6] Implement report endpoints in `src/ClinicQueue.Api/Endpoints/Reporting/ReportEndpoints.cs` (FR-090–FR-093)
+- [X] T064 [P] [US6] Implement post-visit rating submission + aggregate clinic rating (surfaced in clinic search) in `src/ClinicQueue.Api/Endpoints/Reporting/RatingEndpoints.cs` (FR-094, FR-095)
+- [X] T065 [US6] Implement ClinicOwner invite/manage receptionist accounts in `src/ClinicQueue.Api/Endpoints/Identity/MembershipEndpoints.cs` (FR-015)
+- [X] T066 [P] [US6] Build the owner reports + staff-management web UI in `web/src/features/owner-reports/`
 
 **Checkpoint**: Clinic business insights and staffing available.
 
@@ -260,7 +260,7 @@ under the correct clinic and maintains their profile.
 
 - [X] T071 [P] [US8] Implement PatientProfile read/update endpoint (self) in `src/ClinicQueue.Api/Endpoints/Medical/ProfileEndpoints.cs` (FR-080)
 - [X] T072 [US8] Implement patient per-clinic visit/prescription history endpoint in `src/ClinicQueue.Api/Endpoints/Medical/MedicalEndpoints.cs` (FR-083, FR-086)
-- [ ] T073 [P] [US8] Build the patient medical-history + profile web UI in `web/src/features/patient-medical/`
+- [X] T073 [P] [US8] Build the patient medical-history + profile web UI in `web/src/features/patient-medical/`
 
 **Checkpoint**: Patient continuity-of-care surface complete.
 

@@ -25,6 +25,7 @@ services:
       Vapid__PublicKey: ${VAPID_PUBLIC_KEY}
       Vapid__PrivateKey: ${VAPID_PRIVATE_KEY}
       Hangfire__Enabled: "true"
+      Database__ApplyMigrationsOnStartup: "true"
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
@@ -55,6 +56,8 @@ services:
       Hangfire__Enabled: "true"
       Hangfire__ServerOnly: "true"
     depends_on:
+      api:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:

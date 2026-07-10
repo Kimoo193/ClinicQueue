@@ -1,6 +1,7 @@
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Infrastructure.Authorization;
+using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Infrastructure.Identity;
 using ClinicQueue.Infrastructure.Persistence;
 using FluentValidation;

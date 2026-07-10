@@ -25,7 +25,7 @@ public interface IClinicSearchHandler
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>Public clinic search by specialty, name, or location (FR-040). Rating filled in US6.</summary>
+/// <summary>Public clinic search by specialty, name, or location (FR-040). AggregateRating from US6 ratings.</summary>
 public sealed class ClinicSearchHandler : IClinicSearchHandler
 {
     private readonly IAppDbContext _db;
@@ -67,7 +67,7 @@ public sealed class ClinicSearchHandler : IClinicSearchHandler
                 c.Id,
                 c.Name,
                 c.Specialty,
-                null,
+                c.AggregateRating,
                 c.ContactInfo))
             .ToListAsync(cancellationToken);
     }

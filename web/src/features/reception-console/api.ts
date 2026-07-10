@@ -13,6 +13,7 @@ export type ReceptionAppointment = {
   repeatedAbsenceFlag?: boolean;
   absenceCount?: number;
   membershipStatus?: string | null;
+  depositConfirmed?: boolean;
 };
 
 export type ConfirmArrivalResponse = {

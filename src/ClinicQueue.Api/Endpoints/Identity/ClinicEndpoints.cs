@@ -1,10 +1,10 @@
 using System.Security.Claims;
+using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Application.Identity.Clinics;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Infrastructure.Auditing;
 using ClinicQueue.Infrastructure.Authorization;
-using ClinicQueue.Infrastructure.Identity;
 using ClinicQueue.Infrastructure.Persistence;
 using ClinicQueue.Infrastructure.Tenancy;
 using FluentValidation;
@@ -34,10 +34,6 @@ public static class ClinicEndpoints
         group.MapGet("/clinics/{clinicId:guid}/qr-code", GetQrCodeAsync)
             .RequireAuthorization(Policies.ClinicOwner)
             .WithName("GetClinicQrCode");
-
-        group.MapPost("/clinics/{clinicId:guid}/memberships/receptionists", InviteReceptionistAsync)
-            .RequireAuthorization(Policies.ClinicOwner)
-            .WithName("InviteReceptionist");
 
         group.MapGet("/patients/me/clinics", ListMyClinicsAsync)
             .RequireAuthorization(Policies.Patient)
@@ -234,68 +230,6 @@ public static class ClinicEndpoints
         return Results.Ok(new { clinicId, clinic.SubdomainSlug, clinic.QrCodeUrl });
     }
 
-    private static async Task<IResult> InviteReceptionistAsync(
-        Guid clinicId,
-        InviteReceptionistRequest request,
-        HttpContext httpContext,
-        AppDbContext db,
-        IPasswordHasher passwordHasher,
-        IAuditService audit,
-        CancellationToken cancellationToken)
-    {
-        var tenantCheck = EnsureJwtClinic(httpContext, clinicId);
-        if (tenantCheck is not null)
-        {
-            return tenantCheck;
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Name))
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["email"] = ["Email is required."],
-                ["name"] = ["Name is required."]
-            });
-        }
-
-        var email = request.Email.Trim().ToLowerInvariant();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.EmailOrPhone == email, cancellationToken);
-        if (user is null)
-        {
-            // Temporary password; invite flow will force reset in a later iteration
-            user = new User
-            {
-                EmailOrPhone = email,
-                PasswordHash = passwordHasher.Hash(Guid.NewGuid().ToString("N") + "Aa1!")
-            };
-            db.Users.Add(user);
-            await db.SaveChangesAsync(cancellationToken);
-        }
-
-        var membership = new ClinicMembership
-        {
-            ClinicId = clinicId,
-            UserId = user.Id,
-            Role = ClinicRole.Receptionist,
-            InvitedByUserId = GetUserId(httpContext),
-            Status = MembershipStatus.Active
-        };
-        db.ClinicMemberships.Add(membership);
-        await db.SaveChangesAsync(cancellationToken);
-
-        await audit.WriteAsync(
-            clinicId,
-            GetUserId(httpContext),
-            "membership.receptionist.invited",
-            nameof(ClinicMembership),
-            membership.Id,
-            cancellationToken: cancellationToken);
-
-        return Results.Created(
-            $"/api/v1/clinics/{clinicId}/memberships/{membership.Id}",
-            new { membershipId = membership.Id, userId = user.Id, name = request.Name });
-    }
-
     private static async Task<IResult> ListMyClinicsAsync(
         HttpContext httpContext,
         AppDbContext db,
@@ -335,4 +269,3 @@ public static class ClinicEndpoints
     }
 }
 
-public sealed record InviteReceptionistRequest(string Email, string Name);

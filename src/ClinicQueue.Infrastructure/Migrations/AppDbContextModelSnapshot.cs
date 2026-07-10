@@ -78,6 +78,9 @@ namespace ClinicQueue.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<double?>("AggregateRating")
+                        .HasColumnType("double precision");
+
                     b.Property<int>("AutoAbsenceTimeoutMinutes")
                         .HasColumnType("integer");
 
@@ -796,6 +799,47 @@ namespace ClinicQueue.Infrastructure.Migrations
                     b.ToTable("queue_sessions", (string)null);
                 });
 
+            modelBuilder.Entity("ClinicQueue.Domain.Reporting.Rating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("row_version");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.HasIndex("ClinicId");
+
+                    b.ToTable("ratings", (string)null);
+                });
+
             modelBuilder.Entity("ClinicQueue.Domain.Identity.ClinicMembership", b =>
                 {
                     b.HasOne("ClinicQueue.Domain.Identity.Clinic", "Clinic")
@@ -899,6 +943,17 @@ namespace ClinicQueue.Infrastructure.Migrations
                         .HasForeignKey("ClinicId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ClinicQueue.Domain.Reporting.Rating", b =>
+                {
+                    b.HasOne("ClinicQueue.Domain.Queue.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
                 });
 
             modelBuilder.Entity("ClinicQueue.Domain.Identity.Clinic", b =>

@@ -7,9 +7,9 @@
 
 ## Project Summary
 
-Multi-tenant SaaS for smart clinic queue management. **Web-first MVP** (patient, receptionist, doctor, super-admin all on web via React). First client: Dr. Ghada Kamel (OB/GYN). Backend is a Modular Monolith in ASP.NET Core 9 + PostgreSQL 16 + Redis, deployed via Docker on a Hostinger VPS. Native mobile (Flutter) is Phase 2 and reuses the same backend.
+Multi-tenant SaaS for smart clinic queue management. **Web-first MVP** (patient, receptionist, doctor, super-admin all on web via React). First client: Dr. Ghada Kamel (OB/GYN). Backend is a Modular Monolith in ASP.NET Core **10** (`net10.0`) + PostgreSQL 16 + Redis, deployed via Docker Compose (e.g. single VPS). Native mobile (Flutter) is Phase 2 and reuses the same backend.
 
-Read `spec.md` (what), `plan.md` (how), `tasks.md` (order) before implementing. Do not invent requirements — if something is ambiguous, ask.
+Read `specs/001-clinic-queue-mvp/spec.md` (what), `plan.md` (how), `tasks.md` (order) before implementing. Do not invent requirements — if something is ambiguous, ask. Operator docs: `docs/running.md`, `docs/architecture.md`.
 
 ---
 
@@ -100,6 +100,7 @@ Tests green (incl. isolation where relevant) · input validated · access scoped
 ---
 
 ## References in this repo
-- `spec.md` — full requirements (FR-xxx), locked decisions, success criteria.
-- `plan.md` — architecture, stack, module boundaries, algorithms, deployment.
-- `tasks.md` — ordered, checkable task list (M1–M8 + Phase 2).
+- `specs/001-clinic-queue-mvp/spec.md` — full requirements (FR-xxx), locked decisions, success criteria.
+- `specs/001-clinic-queue-mvp/plan.md` — architecture, stack, module boundaries, algorithms, deployment.
+- `specs/001-clinic-queue-mvp/tasks.md` — ordered Spec Kit task list.
+- `docs/running.md` — how to run locally and with Docker.

@@ -8,6 +8,8 @@ using ClinicQueue.Api.Endpoints.Platform;
 using ClinicQueue.Api.Endpoints.Queue;
 using ClinicQueue.Api.Hubs;
 using ClinicQueue.Api.Middleware;
+using ClinicQueue.Api.Endpoints.Reporting;
+using ClinicQueue.Application.Identity;
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Application.Identity.Clinics;
 using ClinicQueue.Application.Medical;
@@ -15,6 +17,7 @@ using ClinicQueue.Application.Notifications;
 using ClinicQueue.Application.Platform.Clinics;
 using ClinicQueue.Application.Queue.Booking;
 using ClinicQueue.Application.Queue.Emergency;
+using ClinicQueue.Application.Reporting;
 using ClinicQueue.Infrastructure;
 using ClinicQueue.Infrastructure.Jobs;
 using ClinicQueue.Infrastructure.Notifications;
@@ -78,6 +81,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<IssuePrescriptionRequestVal
 builder.Services.AddValidatorsFromAssemblyContaining<ClinicSearchRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDependentRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateSubscriptionRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<SubmitRatingRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<InviteReceptionistRequestValidator>();
 
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? string.Empty;
 var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? string.Empty;
@@ -136,6 +141,7 @@ v1.MapGet("/status", () => Results.Ok(new
 
 v1.MapAuthEndpoints();
 v1.MapClinicEndpoints();
+v1.MapMembershipEndpoints();
 v1.MapClinicSearchEndpoints();
 v1.MapBookingEndpoints();
 v1.MapArrivalEndpoints();
@@ -146,6 +152,8 @@ v1.MapProfileEndpoints();
 v1.MapPushSubscriptionEndpoints();
 v1.MapClinicAdminEndpoints();
 v1.MapAnalyticsEndpoints();
+v1.MapReportEndpoints();
+v1.MapRatingEndpoints();
 
 app.MapHub<QueueHub>("/hubs/queue");
 
@@ -178,11 +186,11 @@ if (app.Services.GetService<IRecurringJobManager>() is not null
         "0 * * * *");
 }
 
-// Explicit migration apply for Development only — never auto-apply on Production
-if (app.Environment.IsDevelopment()
-    && builder.Configuration.GetValue("Database:ApplyMigrationsOnStartup", false))
+// Explicit opt-in only (Database:ApplyMigrationsOnStartup). Compose local sets this on `api`.
+// Do not enable in real production without an ops decision — prefer reviewed migrate jobs.
+if (builder.Configuration.GetValue("Database:ApplyMigrationsOnStartup", false))
 {
-    await app.Services.ApplyMigrationsAsync();
+    await app.Services.ApplyMigrationsAsync(allowInProduction: true);
 }
 
 app.Run();

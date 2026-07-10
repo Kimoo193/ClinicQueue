@@ -1,5 +1,6 @@
 using System.Text;
 using ClinicQueue.Application.Abstractions;
+using ClinicQueue.Application.Identity;
 using ClinicQueue.Application.Medical;
 using ClinicQueue.Application.Notifications;
 using ClinicQueue.Application.Platform;
@@ -14,6 +15,7 @@ using ClinicQueue.Application.Queue.Notifications;
 using ClinicQueue.Application.Queue.Numbering;
 using ClinicQueue.Application.Queue.Positioning;
 using ClinicQueue.Application.Queue.Sessions;
+using ClinicQueue.Application.Reporting;
 using ClinicQueue.Domain.Common;
 using ClinicQueue.Infrastructure.Auditing;
 using ClinicQueue.Infrastructure.Identity;
@@ -97,6 +99,12 @@ public static class DependencyInjection
         services.AddScoped<IListPatientVisitsHandler, ListPatientVisitsHandler>();
         services.AddScoped<IGetPatientProfileHandler, GetPatientProfileHandler>();
         services.AddScoped<IUpdatePatientProfileHandler, UpdatePatientProfileHandler>();
+        services.AddScoped<IClinicReportsHandler, ClinicReportsHandler>();
+        services.AddScoped<ISubmitRatingHandler, SubmitRatingHandler>();
+        services.AddScoped<IGetClinicRatingHandler, GetClinicRatingHandler>();
+        services.AddScoped<IInviteReceptionistHandler, InviteReceptionistHandler>();
+        services.AddScoped<IListReceptionistsHandler, ListReceptionistsHandler>();
+        services.AddScoped<IRevokeReceptionistHandler, RevokeReceptionistHandler>();
         services.AddScoped<ICountAheadService, CountAheadService>();
         services.AddScoped<IQueueNotificationRules, QueueNotificationRules>();
         services.AddScoped<IUpsertPushSubscriptionHandler, UpsertPushSubscriptionHandler>();

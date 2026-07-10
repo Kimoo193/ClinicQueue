@@ -5,9 +5,12 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AdminConsolePage } from "@/features/admin-console/AdminConsolePage";
 import { DoctorConsolePage } from "@/features/doctor-console/DoctorConsolePage";
+import { OwnerReportsPage } from "@/features/owner-reports/OwnerReportsPage";
 import { PatientBookingsPage } from "@/features/patient-bookings/PatientBookingsPage";
+import { PatientMedicalPage } from "@/features/patient-medical/PatientMedicalPage";
 import { PatientQueuePage } from "@/features/patient-queue/PatientQueuePage";
 import { ReceptionConsolePage } from "@/features/reception-console/ReceptionConsolePage";
+import { ReceptionDayClosePage } from "@/features/reception-dayclose/ReceptionDayClosePage";
 import { applyDocumentDirection } from "@/i18n";
 
 const queryClient = new QueryClient({
@@ -19,7 +22,15 @@ const queryClient = new QueryClient({
   },
 });
 
-type View = "patient" | "bookings" | "reception" | "doctor" | "owner" | "admin";
+type View =
+  | "patient"
+  | "bookings"
+  | "medical"
+  | "reception"
+  | "dayclose"
+  | "doctor"
+  | "owner"
+  | "admin";
 
 function AppShell() {
   const { t, i18n } = useTranslation();
@@ -95,11 +106,29 @@ function AppShell() {
           <Button
             type="button"
             size="sm"
+            variant={view === "medical" ? "default" : "ghost"}
+            onClick={() => onViewChange("medical")}
+            aria-current={view === "medical" ? "page" : undefined}
+          >
+            {t("nav.medical")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
             variant={view === "reception" ? "default" : "ghost"}
             onClick={() => onViewChange("reception")}
             aria-current={view === "reception" ? "page" : undefined}
           >
             {t("nav.reception")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={view === "dayclose" ? "default" : "ghost"}
+            onClick={() => onViewChange("dayclose")}
+            aria-current={view === "dayclose" ? "page" : undefined}
+          >
+            {t("nav.dayclose")}
           </Button>
           <Button
             type="button"
@@ -148,12 +177,16 @@ function AppShell() {
         ) : clinicId ? (
           view === "reception" ? (
             <ReceptionConsolePage clinicId={clinicId} />
+          ) : view === "dayclose" ? (
+            <ReceptionDayClosePage clinicId={clinicId} />
           ) : view === "doctor" ? (
             <DoctorConsolePage clinicId={clinicId} />
           ) : view === "owner" ? (
-            <DoctorConsolePage clinicId={clinicId} readOnlyClinical />
+            <OwnerReportsPage clinicId={clinicId} />
           ) : view === "bookings" ? (
             <PatientBookingsPage clinicId={clinicId} />
+          ) : view === "medical" ? (
+            <PatientMedicalPage clinicId={clinicId} />
           ) : (
             <PatientQueuePage clinicId={clinicId} />
           )

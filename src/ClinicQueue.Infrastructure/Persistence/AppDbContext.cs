@@ -5,6 +5,7 @@ using ClinicQueue.Domain.Medical;
 using ClinicQueue.Domain.Notifications;
 using ClinicQueue.Domain.Platform;
 using ClinicQueue.Domain.Queue;
+using ClinicQueue.Domain.Reporting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -31,6 +32,7 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<Visit> Visits => Set<Visit>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<ClinicExportJob> ClinicExportJobs => Set<ClinicExportJob>();
+    public DbSet<Rating> Ratings => Set<Rating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +77,7 @@ public class AppDbContext : DbContext, IAppDbContext
         ConfigureVisit(modelBuilder);
         ConfigurePrescription(modelBuilder);
         ConfigureClinicExportJob(modelBuilder);
+        ConfigureRating(modelBuilder);
 
         // Intentionally NO HasQueryFilter for tenant isolation — applied in BaseRepository at execution time.
     }
@@ -125,6 +128,7 @@ public class AppDbContext : DbContext, IAppDbContext
         e.Property(x => x.Specialty).HasMaxLength(200).IsRequired();
         e.Property(x => x.SubdomainSlug).HasMaxLength(100).IsRequired();
         e.Property(x => x.Timezone).HasMaxLength(100).IsRequired();
+        e.Property(x => x.AggregateRating);
     }
 
     private static void ConfigureClinicMembership(ModelBuilder modelBuilder)
@@ -312,6 +316,22 @@ public class AppDbContext : DbContext, IAppDbContext
         e.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
         e.Property(x => x.PayloadJson).HasColumnType("text");
         e.Property(x => x.Error).HasMaxLength(2000);
+        ConfigureRowVersion(e);
+    }
+
+    private static void ConfigureRating(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<Rating>();
+        e.ToTable("ratings");
+        e.HasKey(x => x.Id);
+        e.HasIndex(x => x.AppointmentId).IsUnique();
+        e.HasIndex(x => x.ClinicId);
+        e.Property(x => x.Score).IsRequired();
+        e.Property(x => x.Comment).HasMaxLength(1000);
+        e.HasOne(x => x.Appointment)
+            .WithMany()
+            .HasForeignKey(x => x.AppointmentId)
+            .OnDelete(DeleteBehavior.Restrict);
         ConfigureRowVersion(e);
     }
 
