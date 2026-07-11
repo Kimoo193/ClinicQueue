@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantProvider, JwtTenantProvider>();
         services.AddScoped<RlsConnectionInterceptor>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IMembershipDirectory, MembershipDirectory>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IAuditWriter, EfAuditWriter>();
@@ -110,19 +111,46 @@ public static class DependencyInjection
         services.AddScoped<IUpsertPushSubscriptionHandler, UpsertPushSubscriptionHandler>();
         services.TryAddSingleton<IQueueRealtimePublisher, NullQueueRealtimePublisher>();
 
+        // Three DB roles / connection strings (see docs/configuration.md, docs/architecture.md):
+        //  - Default    → clinicqueue_app       (NOSUPERUSER, NOBYPASSRLS): per-request, RLS ENFORCED.
+        //  - Migrations → clinicqueue            (owner): EF migrations + Hangfire schema (DDL).
+        //  - Privileged → clinicqueue_bypassrls  (BYPASSRLS): SuperAdmin/platform + background jobs.
+        // Migrations/Privileged fall back to Default so local dev and Testcontainers keep working.
         var connectionString = configuration.GetConnectionString("Default")
             ?? configuration["ConnectionStrings__Default"]
             ?? string.Empty;
 
+        var privilegedConnectionString = configuration.GetConnectionString("Privileged")
+            ?? configuration["ConnectionStrings__Privileged"]
+            ?? connectionString;
+
+        var migrationsConnectionString = configuration.GetConnectionString("Migrations")
+            ?? configuration["ConnectionStrings__Migrations"]
+            ?? connectionString;
+
+        services.AddScoped<DbConnectionRole>();
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString, npgsql =>
+            // Background-job scopes (PrivilegedJobActivator) flip DbConnectionRole so this
+            // context and every collaborator resolved in the scope share the BYPASSRLS
+            // connection for legitimate cross-tenant work. Request scopes stay on the app role.
+            var role = sp.GetRequiredService<DbConnectionRole>();
+            options.UseNpgsql(role.Privileged ? privilegedConnectionString : connectionString, npgsql =>
             {
                 npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
             });
+            // Sets app.current_clinic per connection so RLS policies apply to the app role
+            // (no-op under BYPASSRLS).
             options.AddInterceptors(sp.GetRequiredService<RlsConnectionInterceptor>());
         });
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Cross-tenant context: BYPASSRLS role, and deliberately NO RlsConnectionInterceptor.
+        services.AddDbContext<PrivilegedDbContext>(options =>
+        {
+            options.UseNpgsql(privilegedConnectionString);
+        });
+        services.AddScoped<IPrivilegedDbContext>(sp => sp.GetRequiredService<PrivilegedDbContext>());
 
         var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         var signingKey = configuration["Jwt:SigningKey"]
@@ -196,13 +224,17 @@ public static class DependencyInjection
         }
 
         var hangfireEnabled = configuration.GetValue("Hangfire:Enabled", false);
-        if (hangfireEnabled && !string.IsNullOrWhiteSpace(connectionString))
+        if (hangfireEnabled && !string.IsNullOrWhiteSpace(migrationsConnectionString))
         {
-            services.AddHangfire(config => config
+            // Hangfire manages its own schema (DDL) → use the owner/migrations connection,
+            // not the RLS-restricted app role.
+            services.AddHangfire((sp, config) => config
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+                // Run every job in a privileged (BYPASSRLS) DI scope for cross-tenant processing.
+                .UseActivator(new PrivilegedJobActivator(sp.GetRequiredService<IServiceScopeFactory>()))
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(migrationsConnectionString)));
 
             if (configuration.GetValue("Hangfire:ServerOnly", false)
                 || configuration.GetValue("Hangfire:Enabled", false))
@@ -226,7 +258,22 @@ public static class DependencyInjection
             return;
         }
 
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Migrations require DDL and must run as the table owner, never the RLS-restricted
+        // app role. Build a dedicated context on the Migrations connection (falls back to
+        // Default when not separately configured).
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var migrationsConnectionString = configuration.GetConnectionString("Migrations")
+            ?? configuration["ConnectionStrings__Migrations"]
+            ?? configuration.GetConnectionString("Default")
+            ?? configuration["ConnectionStrings__Default"]
+            ?? string.Empty;
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(migrationsConnectionString, npgsql =>
+                npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
+            .Options;
+
+        await using var db = new AppDbContext(options);
         await db.Database.MigrateAsync();
     }
 }

@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using ClinicQueue.Application.Identity;
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Infrastructure.Authorization;
@@ -35,6 +37,13 @@ public static class AuthEndpoints
             .RequireRateLimiting(Middleware.RateLimitingPolicies.Login)
             .WithName("Refresh")
             .WithSummary("Rotate refresh token and issue a new access cookie");
+
+        auth.MapPost("/switch-clinic", SwitchClinicAsync)
+            // Authenticated identity only — NOT a clinic policy: this is how a user obtains a
+            // tenant-scoped token for another clinic they are a member of.
+            .RequireAuthorization()
+            .WithName("SwitchClinic")
+            .WithSummary("Re-issue a tenant-scoped token for another clinic the user is a member of");
 
         auth.MapPost("/logout", LogoutAsync)
             .WithName("Logout")
@@ -78,6 +87,7 @@ public static class AuthEndpoints
         HttpContext httpContext,
         IValidator<LoginRequest> validator,
         AppDbContext db,
+        IMembershipDirectory membershipDirectory,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         CancellationToken cancellationToken)
@@ -120,28 +130,101 @@ public static class AuthEndpoints
         user.LockedUntil = null;
         await db.SaveChangesAsync(cancellationToken);
 
-        var membershipQuery = db.ClinicMemberships.AsNoTracking()
-            .Where(m => m.UserId == user.Id && m.Status == MembershipStatus.Active);
+        // Cross-clinic read via the privileged directory: at login there is no tenant context yet.
+        var memberships = await membershipDirectory.GetActiveMembershipsAsync(user.Id, cancellationToken);
 
-        if (request.ClinicId.HasValue)
+        Guid? clinicId;
+        List<string> roles;
+        if (request.ClinicId is { } requestedClinic)
         {
-            membershipQuery = membershipQuery.Where(m => m.ClinicId == request.ClinicId.Value);
+            // Explicit clinic → only the roles the user actually holds IN THAT clinic.
+            roles = memberships
+                .Where(m => m.ClinicId == requestedClinic)
+                .Select(m => m.Role.ToString())
+                .Distinct()
+                .ToList();
+
+            if (roles.Count == 0 && !user.IsSuperAdmin)
+            {
+                // Never mint a token scoped to a clinic the user is not an active member of.
+                return Results.Forbid();
+            }
+
+            clinicId = requestedClinic;
+        }
+        else
+        {
+            var distinctClinics = memberships.Select(m => m.ClinicId).Distinct().ToList();
+            if (distinctClinics.Count == 1)
+            {
+                clinicId = distinctClinics[0];
+                roles = memberships
+                    .Where(m => m.ClinicId == clinicId)
+                    .Select(m => m.Role.ToString())
+                    .Distinct()
+                    .ToList();
+            }
+            else
+            {
+                // 0 or >1 memberships → identity-only token; client picks a clinic via /switch-clinic.
+                clinicId = null;
+                roles = new List<string>();
+            }
         }
 
-        var memberships = await membershipQuery.ToListAsync(cancellationToken);
-        var roles = memberships.Select(m => m.Role.ToString()).Distinct().ToList();
         if (user.IsSuperAdmin)
         {
             roles.Add(Roles.SuperAdmin);
         }
 
-        Guid? clinicId = request.ClinicId
-            ?? memberships.Select(m => (Guid?)m.ClinicId).FirstOrDefault();
-
         var tokens = await tokenService.IssueAsync(user, clinicId, roles, cancellationToken);
         tokenService.WriteAuthCookies(httpContext.Response, tokens);
 
-        return Results.Ok(new AuthUserResponse(user.Id, roles));
+        var summaries = memberships
+            .Select(m => new ClinicMembershipSummary(m.ClinicId, m.ClinicName, m.Role.ToString()))
+            .ToList();
+
+        return Results.Ok(new AuthUserResponse(user.Id, roles, clinicId, summaries));
+    }
+
+    private static async Task<IResult> SwitchClinicAsync(
+        SwitchClinicRequest request,
+        HttpContext httpContext,
+        AppDbContext db,
+        IMembershipDirectory membershipDirectory,
+        ITokenService tokenService,
+        CancellationToken cancellationToken)
+    {
+        var userIdRaw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? httpContext.User.FindFirstValue("sub");
+        if (!Guid.TryParse(userIdRaw, out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        // Validate against ClinicMembership — only roles backed by an active membership are issued.
+        var roles = (await membershipDirectory.GetActiveRolesAsync(userId, request.ClinicId, cancellationToken))
+            .ToList();
+        if (roles.Count == 0 && !user.IsSuperAdmin)
+        {
+            return Results.Forbid();
+        }
+
+        if (user.IsSuperAdmin)
+        {
+            roles.Add(Roles.SuperAdmin);
+        }
+
+        var tokens = await tokenService.IssueAsync(user, request.ClinicId, roles, cancellationToken);
+        tokenService.WriteAuthCookies(httpContext.Response, tokens);
+
+        return Results.Ok(new AuthUserResponse(user.Id, roles, request.ClinicId));
     }
 
     private static async Task<IResult> RefreshAsync(

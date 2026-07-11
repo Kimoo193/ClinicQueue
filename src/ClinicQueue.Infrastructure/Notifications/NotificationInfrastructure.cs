@@ -173,21 +173,28 @@ public sealed class OutboxDispatchJob
 {
     public const int MaxAttempts = 3;
 
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly AppDbContext _db;
+    private readonly INotificationDispatcher _dispatcher;
     private readonly ILogger<OutboxDispatchJob> _logger;
 
-    public OutboxDispatchJob(IServiceScopeFactory scopeFactory, ILogger<OutboxDispatchJob> logger)
+    // Resolved by PrivilegedJobActivator inside a BYPASSRLS scope: the outbox is polled
+    // across all clinics, so this deliberately runs cross-tenant. Each notification carries
+    // its own ClinicId; downstream channels filter by it.
+    public OutboxDispatchJob(
+        AppDbContext db,
+        INotificationDispatcher dispatcher,
+        ILogger<OutboxDispatchJob> logger)
     {
-        _scopeFactory = scopeFactory;
+        _db = db;
+        _dispatcher = dispatcher;
         _logger = logger;
     }
 
     [AutomaticRetry(Attempts = 0)]
     public async Task ProcessPendingAsync(CancellationToken cancellationToken = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+        var db = _db;
+        var dispatcher = _dispatcher;
 
         var pending = await db.OutboxNotifications
             .Where(n => n.Status == OutboxNotificationStatus.Pending && n.Attempts < MaxAttempts)

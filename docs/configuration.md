@@ -6,7 +6,9 @@ Keys below are read by the running API or Compose. Verify against `appsettings.j
 
 | Key | Purpose | Notes |
 |-----|---------|--------|
-| `ConnectionStrings:Default` | PostgreSQL | Required for API; empty in base `appsettings.json` |
+| `ConnectionStrings:Default` | PostgreSQL — **application** role | Required for API. Connects as the non-owner, RLS-enforced role `clinicqueue_app`. Empty in base `appsettings.json` |
+| `ConnectionStrings:Migrations` | PostgreSQL — **owner/admin** role | EF migrations + Hangfire schema (DDL). Owner role `clinicqueue`. Falls back to `Default` when unset (dev/tests) |
+| `ConnectionStrings:Privileged` | PostgreSQL — **cross-tenant** role | SuperAdmin/platform handlers + background jobs. `BYPASSRLS` role `clinicqueue_bypassrls`. Falls back to `Default` when unset (dev/tests) |
 | `ConnectionStrings:Redis` | Redis | If set, SignalR uses Redis backplane; if empty/missing, in-process SignalR |
 | `Jwt:Issuer` | Token issuer | Default `ClinicQueue` |
 | `Jwt:Audience` | Token audience | Default `ClinicQueue` |
@@ -30,7 +32,9 @@ Environment variable form uses `__` nesting, e.g. `ConnectionStrings__Default`, 
 
 | Variable | Used for |
 |----------|----------|
-| `POSTGRES_PASSWORD` | Postgres + API connection string |
+| `POSTGRES_PASSWORD` | Owner role `clinicqueue` (`ConnectionStrings__Migrations`) + `postgres-init` |
+| `APP_DB_PASSWORD` | Non-owner app role `clinicqueue_app` (`ConnectionStrings__Default`, RLS-enforced) |
+| `BYPASS_DB_PASSWORD` | Cross-tenant role `clinicqueue_bypassrls` (`ConnectionStrings__Privileged`) |
 | `REDIS_PASSWORD` | Redis `requirepass` + API Redis connection |
 | `JWT_SIGNING_KEY` | `Jwt__SigningKey` |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push |
@@ -39,6 +43,28 @@ Environment variable form uses `__` nesting, e.g. `ConnectionStrings__Default`, 
 | `CLINICQUEUE_BACKUP_PASSPHRASE_FILE` / `CLINICQUEUE_BACKUP_OFFSITE` | Backup overlay |
 
 Copy to `docker/.env` (gitignored patterns cover secrets). Never commit real passwords or signing keys.
+
+## Database roles (three-role RLS model)
+
+Tenant isolation's final layer is PostgreSQL Row-Level Security, which is only effective if
+the application does **not** connect as the table owner (owners bypass RLS unless `FORCE`d,
+and even then superusers/`BYPASSRLS` roles skip it). Three roles separate these concerns:
+
+| Role | Attributes | Used by | RLS |
+|------|-----------|---------|-----|
+| `clinicqueue` | owner, superuser | EF migrations (`ConnectionStrings:Migrations`), Hangfire schema | bypasses (owner/superuser) |
+| `clinicqueue_app` | NOSUPERUSER, **NOBYPASSRLS** | every per-request query (`ConnectionStrings:Default`) | **enforced** |
+| `clinicqueue_bypassrls` | NOSUPERUSER, **BYPASSRLS** | SuperAdmin/platform handlers + background jobs (`ConnectionStrings:Privileged`) | bypassed by design |
+
+- The two non-owner roles are created on first cluster init by `docker/postgres-init/01-roles.sh`
+  (passwords from `APP_DB_PASSWORD` / `BYPASS_DB_PASSWORD`). `ALTER DEFAULT PRIVILEGES` grants
+  DML on tables the owner creates later (EF migrations), and the `AddForceRlsAndAppRoleGrants`
+  migration additionally `FORCE`s RLS and grants DML explicitly (guarded by role existence).
+- Cross-tenant access is **explicit**: platform handlers inject `IPrivilegedDbContext`; background
+  jobs run through `PrivilegedJobActivator`, which marks the whole job scope privileged so the job
+  and its collaborators share the `BYPASSRLS` connection. Everything else uses `AppDbContext`
+  (app role, RLS-enforced). Never grant `BYPASSRLS` to `clinicqueue_app`.
+- When `Migrations`/`Privileged` are unset (local dev, Testcontainers) they fall back to `Default`.
 
 ## Development defaults
 

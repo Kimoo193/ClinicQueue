@@ -23,12 +23,14 @@ namespace ClinicQueue.IntegrationTests.Platform;
 [Collection(Infrastructure.PostgresCollection.Name)]
 public sealed class SubscriptionTests(Infrastructure.PostgresFixture fixture)
 {
-    private AppDbContext CreateContext()
+    // PrivilegedDbContext (subclass of AppDbContext) so platform handlers requiring
+    // IPrivilegedDbContext accept it; still migrates and behaves as an AppDbContext.
+    private PrivilegedDbContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        var options = new DbContextOptionsBuilder<PrivilegedDbContext>()
             .UseNpgsql(fixture.ConnectionString)
             .Options;
-        return new AppDbContext(options);
+        return new PrivilegedDbContext(options);
     }
 
     private static ClinicAccessGate Gate(AppDbContext db) => new(db);

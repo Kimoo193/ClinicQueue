@@ -73,9 +73,9 @@ public sealed class ClinicExportHandler : IClinicExportHandler
         WriteIndented = false
     };
 
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public ClinicExportHandler(IAppDbContext db) => _db = db;
+    public ClinicExportHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<ClinicExportJobResult> StartAsync(
         StartClinicExportCommand command,

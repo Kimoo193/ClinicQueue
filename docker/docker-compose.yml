@@ -19,7 +19,11 @@ services:
       dockerfile: docker/Dockerfile.api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue;Password=${POSTGRES_PASSWORD}
+      # App connects as the non-owner, RLS-enforced role. Migrations run as the owner.
+      # Cross-tenant (SuperAdmin/platform + background jobs) use the BYPASSRLS role.
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue_app;Password=${APP_DB_PASSWORD}
+      ConnectionStrings__Migrations: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Privileged: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue_bypassrls;Password=${BYPASS_DB_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Vapid__PublicKey: ${VAPID_PUBLIC_KEY}
@@ -48,7 +52,11 @@ services:
       dockerfile: docker/Dockerfile.api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue;Password=${POSTGRES_PASSWORD}
+      # Worker executes background jobs cross-tenant via the BYPASSRLS role (PrivilegedJobActivator);
+      # its app-role connection is RLS-enforced like the API.
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue_app;Password=${APP_DB_PASSWORD}
+      ConnectionStrings__Migrations: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Privileged: Host=postgres;Port=5432;Database=clinicqueue;Username=clinicqueue_bypassrls;Password=${BYPASS_DB_PASSWORD}
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD}
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Vapid__PublicKey: ${VAPID_PUBLIC_KEY}
@@ -80,8 +88,14 @@ services:
       POSTGRES_DB: clinicqueue
       POSTGRES_USER: clinicqueue
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Consumed by postgres-init/01-roles.sh on first cluster init to create the
+      # non-owner clinicqueue_app / clinicqueue_bypassrls roles.
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      BYPASS_DB_PASSWORD: ${BYPASS_DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Role provisioning runs only on a fresh data volume (docker-entrypoint-initdb.d).
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U clinicqueue -d clinicqueue"]
       interval: 5s

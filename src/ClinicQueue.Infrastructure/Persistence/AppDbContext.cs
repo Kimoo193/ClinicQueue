@@ -17,6 +17,14 @@ public class AppDbContext : DbContext, IAppDbContext
     {
     }
 
+    /// <summary>
+    /// Non-generic ctor so derived contexts (e.g. <see cref="PrivilegedDbContext"/>) can
+    /// reuse this model/configuration with their own options and connection.
+    /// </summary>
+    protected AppDbContext(DbContextOptions options) : base(options)
+    {
+    }
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Clinic> Clinics => Set<Clinic>();
     public DbSet<ClinicMembership> ClinicMemberships => Set<ClinicMembership>();

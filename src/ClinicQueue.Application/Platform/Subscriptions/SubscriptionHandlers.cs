@@ -28,9 +28,9 @@ public interface IUpdateSubscriptionHandler
 /// <summary>Super-admin subscription plan management (FR-101).</summary>
 public sealed class UpdateSubscriptionHandler : IUpdateSubscriptionHandler
 {
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public UpdateSubscriptionHandler(IAppDbContext db) => _db = db;
+    public UpdateSubscriptionHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<SubscriptionResultDto> HandleAsync(
         UpdateSubscriptionCommand command,
@@ -107,9 +107,9 @@ public sealed class SubscriptionLifecycleService : ISubscriptionLifecycleService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public SubscriptionLifecycleService(IAppDbContext db) => _db = db;
+    public SubscriptionLifecycleService(IPrivilegedDbContext db) => _db = db;
 
     public async Task ProcessRenewalsAsync(CancellationToken cancellationToken = default)
     {
