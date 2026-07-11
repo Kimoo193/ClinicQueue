@@ -23,37 +23,8 @@ namespace ClinicQueue.IntegrationTests.Identity;
 [Collection(Infrastructure.PostgresCollection.Name)]
 public sealed class CrossClinicRoleTests(Infrastructure.PostgresFixture fixture)
 {
-    private const string SigningKey = "integration-test-signing-key-32chars!!";
     private const string Password = "Password123!";
     private const string ReceptionistEndpoint = "/api/v1/appointments/today"; // RequireAuthorization(Receptionist)
-
-    private sealed class ApiFactory(string connectionString) : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Development");
-            // UseSetting has higher priority than appsettings.Development.json, whose local
-            // Default connection string would otherwise point the API at the wrong database.
-            builder.UseSetting("ConnectionStrings:Default", connectionString);
-            builder.UseSetting("ConnectionStrings:Redis", "");
-            builder.UseSetting("Jwt:SigningKey", SigningKey);
-            builder.UseSetting("Hangfire:Enabled", "false");
-            builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = connectionString,
-                    ["ConnectionStrings:Redis"] = "",
-                    ["Jwt:SigningKey"] = SigningKey,
-                    ["Jwt:Issuer"] = "ClinicQueue",
-                    ["Jwt:Audience"] = "ClinicQueue",
-                    ["Hangfire:Enabled"] = "false",
-                    ["Database:ApplyMigrationsOnStartup"] = "false",
-                });
-            });
-        }
-    }
 
     private AppDbContext CreateContext()
     {
@@ -103,9 +74,9 @@ public sealed class CrossClinicRoleTests(Infrastructure.PostgresFixture fixture)
         return new Seed(email, user.Id, clinicA, clinicB, receptionistA.Id);
     }
 
-    private static ApiFactory Factory(Infrastructure.PostgresFixture fixture) => new(fixture.ConnectionString);
+    private static Infrastructure.AppRoleApiFactory Factory(Infrastructure.PostgresFixture fixture) => new(fixture);
 
-    private static HttpClient Client(ApiFactory factory) =>
+    private static HttpClient Client(Infrastructure.AppRoleApiFactory factory) =>
         // HandleCookies=false so we drive Bearer tokens explicitly (and skip CSRF, which only
         // guards cookie-authenticated requests).
         factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });

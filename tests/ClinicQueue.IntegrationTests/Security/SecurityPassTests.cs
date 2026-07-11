@@ -14,44 +14,10 @@ namespace ClinicQueue.IntegrationTests.Security;
 [Collection(Infrastructure.PostgresCollection.Name)]
 public sealed class SecurityPassTests(Infrastructure.PostgresFixture fixture)
 {
-    private const string SigningKey = "integration-test-signing-key-32chars!!";
-
-    private sealed class ApiFactory(string connectionString) : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Development");
-            builder.UseSetting("ConnectionStrings:Default", connectionString);
-            builder.UseSetting("ConnectionStrings:Redis", "");
-            builder.UseSetting("Jwt:SigningKey", SigningKey);
-            builder.UseSetting("Jwt:Issuer", "ClinicQueue");
-            builder.UseSetting("Jwt:Audience", "ClinicQueue");
-            builder.UseSetting("Hangfire:Enabled", "false");
-            builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
-            builder.UseSetting("OpenApi:EnableUi", "true");
-            builder.UseSetting("Cors:AllowedOrigins:0", "https://app.clinicqueue.test");
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = connectionString,
-                    ["ConnectionStrings:Redis"] = "",
-                    ["Jwt:SigningKey"] = SigningKey,
-                    ["Jwt:Issuer"] = "ClinicQueue",
-                    ["Jwt:Audience"] = "ClinicQueue",
-                    ["Hangfire:Enabled"] = "false",
-                    ["Database:ApplyMigrationsOnStartup"] = "false",
-                    ["OpenApi:EnableUi"] = "true",
-                    ["Cors:AllowedOrigins:0"] = "https://app.clinicqueue.test"
-                });
-            });
-        }
-    }
-
     [Fact]
     public async Task Responses_include_security_headers()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
         var response = await client.GetAsync("/health");
         response.EnsureSuccessStatusCode();
@@ -66,7 +32,7 @@ public sealed class SecurityPassTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Cors_does_not_reflect_arbitrary_origins()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Options, "/api/v1/status");
         request.Headers.Add("Origin", "https://evil.example");
@@ -80,7 +46,7 @@ public sealed class SecurityPassTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Login_rate_limiting_policy_is_enforced()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
 
         HttpResponseMessage? last = null;

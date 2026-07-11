@@ -6,6 +6,7 @@ using ClinicQueue.Infrastructure.Authorization;
 using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Infrastructure.Identity;
 using ClinicQueue.Infrastructure.Persistence;
+using ClinicQueue.Infrastructure.Tenancy;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,16 +46,69 @@ public static class AuthEndpoints
             .WithName("SwitchClinic")
             .WithSummary("Re-issue a tenant-scoped token for another clinic the user is a member of");
 
+        auth.MapGet("/me", MeAsync)
+            .RequireAuthorization()
+            .WithName("GetAuthMe")
+            .WithSummary("Return the current identity, active clinic context, and memberships");
+
         auth.MapPost("/logout", LogoutAsync)
             .WithName("Logout")
             .WithSummary("Revoke refresh token and clear auth cookies");
         return group;
     }
 
+    private static async Task<IResult> MeAsync(
+        HttpContext httpContext,
+        AppDbContext db,
+        IMembershipDirectory membershipDirectory,
+        CancellationToken cancellationToken)
+    {
+        var userIdRaw = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? httpContext.User.FindFirstValue("sub");
+        if (!Guid.TryParse(userIdRaw, out var userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var user = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var memberships = await membershipDirectory.GetActiveMembershipsAsync(userId, cancellationToken);
+        var summaries = memberships
+            .Select(m => new ClinicMembershipSummary(m.ClinicId, m.ClinicName, m.Role.ToString()))
+            .ToList();
+
+        Guid? clinicId = null;
+        var clinicClaim = httpContext.User.FindFirstValue(JwtTenantProvider.ClinicIdClaimType);
+        if (Guid.TryParse(clinicClaim, out var parsedClinic))
+        {
+            clinicId = parsedClinic;
+        }
+
+        var roles = httpContext.User.FindAll(ClaimTypes.Role)
+            .Select(c => c.Value)
+            .Distinct()
+            .ToList();
+
+        return Results.Ok(new AuthUserResponse(user.Id, roles, clinicId, summaries));
+    }
+
+    // Registration is anonymous. The global User identity lives in a non-tenant table (no RLS), so
+    // it is created on the RLS-enforced AppDbContext. The optional QR/subdomain Patient membership,
+    // however, is a clinic-scoped row created before the user has any clinic_id claim — under the
+    // app role app.current_clinic is empty and the RLS WITH CHECK would reject it. That membership
+    // is therefore written through the BYPASSRLS PrivilegedDbContext (a legitimate onboarding
+    // cross-tenant write) and pinned to the requested clinic. Do NOT move the membership insert back
+    // onto AppDbContext: production RLS blocks it even though superuser-run tests pass.
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         IValidator<RegisterRequest> validator,
         AppDbContext db,
+        PrivilegedDbContext privileged,
         IPasswordHasher passwordHasher,
         CancellationToken cancellationToken)
     {
@@ -71,6 +125,20 @@ public static class AuthEndpoints
             return Results.Conflict(new { title = "Account already exists." });
         }
 
+        Clinic? joinClinic = null;
+        if (request.ClinicId is { } clinicId)
+        {
+            // Optional clinic on register is for QR/subdomain onboarding (FR-007) — creates a
+            // Patient membership. Authoritative tenant scope still comes from the JWT after login.
+            joinClinic = await db.Clinics.FirstOrDefaultAsync(
+                c => c.Id == clinicId && c.Status == ClinicStatus.Active,
+                cancellationToken);
+            if (joinClinic is null)
+            {
+                return Results.NotFound(new { title = "Clinic not found." });
+            }
+        }
+
         var user = new User
         {
             EmailOrPhone = normalized,
@@ -78,6 +146,26 @@ public static class AuthEndpoints
         };
         db.Users.Add(user);
         await db.SaveChangesAsync(cancellationToken);
+
+        if (joinClinic is not null)
+        {
+            var membership = new ClinicMembership
+            {
+                ClinicId = joinClinic.Id,
+                UserId = user.Id,
+                Role = ClinicRole.Patient,
+                Status = MembershipStatus.Active
+            };
+            if (membership.ClinicId != joinClinic.Id)
+            {
+                throw new InvalidOperationException(
+                    $"Registration onboarding write refused: membership.ClinicId {membership.ClinicId} " +
+                    $"does not match the target clinic {joinClinic.Id}.");
+            }
+
+            privileged.ClinicMemberships.Add(membership);
+            await privileged.SaveChangesAsync(cancellationToken);
+        }
 
         return Results.Created("/api/v1/auth/register", new AuthUserResponse(user.Id, Array.Empty<string>()));
     }
@@ -224,7 +312,12 @@ public static class AuthEndpoints
         var tokens = await tokenService.IssueAsync(user, request.ClinicId, roles, cancellationToken);
         tokenService.WriteAuthCookies(httpContext.Response, tokens);
 
-        return Results.Ok(new AuthUserResponse(user.Id, roles, request.ClinicId));
+        var memberships = await membershipDirectory.GetActiveMembershipsAsync(userId, cancellationToken);
+        var summaries = memberships
+            .Select(m => new ClinicMembershipSummary(m.ClinicId, m.ClinicName, m.Role.ToString()))
+            .ToList();
+
+        return Results.Ok(new AuthUserResponse(user.Id, roles, request.ClinicId, summaries));
     }
 
     private static async Task<IResult> RefreshAsync(

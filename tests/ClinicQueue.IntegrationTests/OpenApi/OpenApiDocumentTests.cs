@@ -12,42 +12,10 @@ namespace ClinicQueue.IntegrationTests.OpenApi;
 [Collection(Infrastructure.PostgresCollection.Name)]
 public sealed class OpenApiDocumentTests(Infrastructure.PostgresFixture fixture)
 {
-    private const string SigningKey = "integration-test-signing-key-32chars!!";
-
-    private sealed class ApiFactory(string connectionString) : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Development");
-            builder.UseSetting("ConnectionStrings:Default", connectionString);
-            builder.UseSetting("ConnectionStrings:Redis", "");
-            builder.UseSetting("Jwt:SigningKey", SigningKey);
-            builder.UseSetting("Jwt:Issuer", "ClinicQueue");
-            builder.UseSetting("Jwt:Audience", "ClinicQueue");
-            builder.UseSetting("Hangfire:Enabled", "false");
-            builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
-            builder.UseSetting("OpenApi:EnableUi", "true");
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = connectionString,
-                    ["ConnectionStrings:Redis"] = "",
-                    ["Jwt:SigningKey"] = SigningKey,
-                    ["Jwt:Issuer"] = "ClinicQueue",
-                    ["Jwt:Audience"] = "ClinicQueue",
-                    ["Hangfire:Enabled"] = "false",
-                    ["Database:ApplyMigrationsOnStartup"] = "false",
-                    ["OpenApi:EnableUi"] = "true"
-                });
-            });
-        }
-    }
-
     [Fact]
     public async Task OpenApi_document_lists_versioned_api_paths()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
 
         var response = await client.GetAsync("/openapi/v1.json");
@@ -71,7 +39,7 @@ public sealed class OpenApiDocumentTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Scalar_ui_is_available_when_enabled()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
         var response = await client.GetAsync("/scalar/v1");
         response.IsSuccessStatusCode.Should().BeTrue();

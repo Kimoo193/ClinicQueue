@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ClinicQueue.Application.Abstractions;
 using ClinicQueue.Application.Identity.Auth;
 using ClinicQueue.Application.Identity.Clinics;
+using ClinicQueue.Domain.Common;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Infrastructure.Auditing;
 using ClinicQueue.Infrastructure.Authorization;
@@ -23,6 +24,13 @@ public static class ClinicEndpoints
             .AllowAnonymous()
             .WithName("CreateClinic");
 
+        // Public slug → branding for QR / subdomain entry (FR-007). ClinicId here is display-only;
+        // authoritative tenant scope still comes from the JWT after login (constitution Principle I).
+        group.MapGet("/clinics/by-slug/{slug}", GetBySlugAsync)
+            .AllowAnonymous()
+            .WithName("GetClinicBySlug")
+            .WithSummary("Resolve a clinic's public branding profile by subdomain slug");
+
         group.MapPatch("/clinics/{clinicId:guid}/branding", UpdateBrandingAsync)
             .RequireAuthorization(Policies.ClinicOwner)
             .WithName("UpdateClinicBranding");
@@ -39,13 +47,57 @@ public static class ClinicEndpoints
             .RequireAuthorization(Policies.Patient)
             .WithName("ListMyClinics");
 
+        // Authenticated identity (possibly no clinic claim yet) joins as Patient after bare register / QR.
+        group.MapPost("/clinics/{clinicId:guid}/join", JoinAsPatientAsync)
+            .RequireAuthorization()
+            .WithName("JoinClinicAsPatient")
+            .WithSummary("Create an active Patient membership for the current user in this clinic");
+
         return group;
     }
 
+    private static async Task<IResult> GetBySlugAsync(
+        string slug,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var normalized = slug.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > 100)
+        {
+            return Results.NotFound();
+        }
+
+        var clinic = await db.Clinics.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.SubdomainSlug == normalized && c.Status == ClinicStatus.Active,
+                cancellationToken);
+
+        if (clinic is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(new PublicClinicProfileResponse(
+            clinic.Id,
+            clinic.Name,
+            clinic.Specialty,
+            clinic.SubdomainSlug,
+            clinic.LogoUrl,
+            clinic.PrimaryColor,
+            clinic.SecondaryColor));
+    }
+
+    // WHY PrivilegedDbContext (BYPASSRLS): clinic sign-up is anonymous — there is no authenticated
+    // user and therefore no clinic_id claim, so app.current_clinic is empty. The owner membership
+    // and the trial subscription are the FIRST rows of a brand-new tenant, and the RLS WITH CHECK
+    // would reject them under the app role. This is a legitimate bootstrap write, so it runs on the
+    // privileged connection. Do NOT move it back to AppDbContext (production RLS blocks it even
+    // though superuser tests pass). Both tenant rows are pinned to the new clinic.Id and re-checked
+    // by GuardClinicScope before save.
     private static async Task<IResult> CreateClinicAsync(
         CreateClinicRequest request,
         IValidator<CreateClinicRequest> validator,
-        AppDbContext db,
+        PrivilegedDbContext privileged,
         IPasswordHasher passwordHasher,
         CancellationToken cancellationToken)
     {
@@ -56,7 +108,7 @@ public static class ClinicEndpoints
         }
 
         var email = request.AdminEmail.Trim().ToLowerInvariant();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.EmailOrPhone == email, cancellationToken);
+        var user = await privileged.Users.FirstOrDefaultAsync(u => u.EmailOrPhone == email, cancellationToken);
         if (user is null)
         {
             user = new User
@@ -64,7 +116,7 @@ public static class ClinicEndpoints
                 EmailOrPhone = email,
                 PasswordHash = passwordHasher.Hash(request.AdminPassword)
             };
-            db.Users.Add(user);
+            privileged.Users.Add(user);
         }
 
         var clinic = new Clinic
@@ -75,28 +127,32 @@ public static class ClinicEndpoints
             SubdomainSlug = SubdomainSlug.FromClinicName(request.Name),
             QrCodeUrl = null
         };
-        clinic.QrCodeUrl = $"https://{clinic.SubdomainSlug}.clinicqueue.app/join";
+        clinic.QrCodeUrl = $"https://app.clinicqueue.app/r/{clinic.SubdomainSlug}";
 
-        db.Clinics.Add(clinic);
-        await db.SaveChangesAsync(cancellationToken);
+        privileged.Clinics.Add(clinic);
+        await privileged.SaveChangesAsync(cancellationToken);
 
-        db.ClinicMemberships.Add(new ClinicMembership
+        var ownerMembership = new ClinicMembership
         {
             ClinicId = clinic.Id,
             UserId = user.Id,
             Role = ClinicRole.ClinicOwner,
             Status = MembershipStatus.Active
-        });
+        };
+        GuardClinicScope(ownerMembership.ClinicId, clinic.Id, nameof(ClinicMembership));
+        privileged.ClinicMemberships.Add(ownerMembership);
 
-        db.Subscriptions.Add(new Subscription
+        var subscription = new Subscription
         {
             ClinicId = clinic.Id,
             PlanName = "trial",
             Status = SubscriptionStatus.Active,
             RenewalDate = DateTime.UtcNow.AddDays(30)
-        });
+        };
+        GuardClinicScope(subscription.ClinicId, clinic.Id, nameof(Subscription));
+        privileged.Subscriptions.Add(subscription);
 
-        await db.SaveChangesAsync(cancellationToken);
+        await privileged.SaveChangesAsync(cancellationToken);
 
         return Results.Created(
             $"/api/v1/clinics/{clinic.Id}",
@@ -249,6 +305,82 @@ public static class ClinicEndpoints
         return Results.Ok(clinics);
     }
 
+    // WHY PrivilegedDbContext (BYPASSRLS) and not AppDbContext here:
+    // This is an onboarding write. The just-authenticated user has NO clinic_id claim yet — they
+    // are joining their first/next clinic — so app.current_clinic is empty. Under the RLS-enforced
+    // app role the tenant_isolation WITH CHECK on clinic_memberships/audit_logs evaluates to NULL
+    // and REJECTS these INSERTs (and the existence read would fail-closed to zero rows, causing a
+    // duplicate insert). It is a legitimate cross-tenant write because the user has no tenant
+    // context to scope by, so it must run through the privileged connection. Do NOT "clean this up"
+    // back to AppDbContext: production RLS will block it even though superuser-run tests pass.
+    // Every row is pinned to the path clinicId and re-checked by GuardClinicScope before save.
+    private static async Task<IResult> JoinAsPatientAsync(
+        Guid clinicId,
+        HttpContext httpContext,
+        PrivilegedDbContext privileged,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserId(httpContext);
+        if (userId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var clinic = await privileged.Clinics.FirstOrDefaultAsync(
+            c => c.Id == clinicId && c.Status == ClinicStatus.Active,
+            cancellationToken);
+        if (clinic is null)
+        {
+            return Results.NotFound(new { title = "Clinic not found." });
+        }
+
+        var existing = await privileged.ClinicMemberships.FirstOrDefaultAsync(
+            m => m.ClinicId == clinicId
+                 && m.UserId == userId.Value
+                 && m.Role == ClinicRole.Patient,
+            cancellationToken);
+
+        if (existing is null)
+        {
+            existing = new ClinicMembership
+            {
+                ClinicId = clinicId,
+                UserId = userId.Value,
+                Role = ClinicRole.Patient,
+                Status = MembershipStatus.Active
+            };
+            GuardClinicScope(existing.ClinicId, clinicId, nameof(ClinicMembership));
+            privileged.ClinicMemberships.Add(existing);
+
+            var auditRow = new AuditLog
+            {
+                ClinicId = clinicId,
+                ActorUserId = userId.Value,
+                Action = "PatientJoinedClinic",
+                EntityType = nameof(ClinicMembership),
+                EntityId = existing.Id,
+                Timestamp = DateTime.UtcNow
+            };
+            GuardClinicScope(auditRow.ClinicId, clinicId, nameof(AuditLog));
+            privileged.AuditLogs.Add(auditRow);
+
+            await privileged.SaveChangesAsync(cancellationToken);
+        }
+        else if (existing.Status != MembershipStatus.Active)
+        {
+            existing.Status = MembershipStatus.Active;
+            await privileged.SaveChangesAsync(cancellationToken);
+        }
+
+        return Results.Ok(new
+        {
+            clinicId = clinic.Id,
+            clinicName = clinic.Name,
+            membershipId = existing.Id,
+            role = ClinicRole.Patient.ToString()
+        });
+    }
+
     private static IResult? EnsureJwtClinic(HttpContext httpContext, Guid clinicId)
     {
         var claim = httpContext.User.FindFirstValue(JwtTenantProvider.ClinicIdClaimType);
@@ -259,6 +391,19 @@ public static class ClinicEndpoints
         }
 
         return null;
+    }
+
+    // Defence-in-depth for the privileged (BYPASSRLS) onboarding writes above: the database will
+    // NOT stop a row whose ClinicId points at the wrong tenant, so we assert scope in code before
+    // save. Mirrors the per-row guard the hardened background jobs use (see OutboxDispatchJob).
+    private static void GuardClinicScope(Guid rowClinicId, Guid expectedClinicId, string entity)
+    {
+        if (rowClinicId != expectedClinicId)
+        {
+            throw new InvalidOperationException(
+                $"Onboarding write refused: {entity}.ClinicId {rowClinicId} does not match the " +
+                $"target clinic {expectedClinicId}.");
+        }
     }
 
     private static Guid? GetUserId(HttpContext httpContext)

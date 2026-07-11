@@ -117,7 +117,7 @@ public sealed class RlsEnforcementTests(Infrastructure.PostgresFixture fixture)
         }
 
         // 2) As the app role scoped to A: only A's rows are visible, never B's.
-        await using (var appAsA = await OpenAsync(fixture.AppConnectionString, clinicA))
+        await using (var appAsA = await OpenAsync(fixture.AppConnectionStringUnpooled, clinicA))
         {
             foreach (var table in TenantTables)
             {
@@ -135,7 +135,7 @@ public sealed class RlsEnforcementTests(Infrastructure.PostgresFixture fixture)
         }
 
         // 3) Fail-closed: app role with NO app.current_clinic set → zero rows everywhere.
-        await using (var appUnset = await OpenAsync(fixture.AppConnectionString, scopedClinic: null))
+        await using (var appUnset = await OpenAsync(fixture.AppConnectionStringUnpooled, scopedClinic: null))
         {
             foreach (var table in TenantTables)
             {
@@ -145,7 +145,7 @@ public sealed class RlsEnforcementTests(Infrastructure.PostgresFixture fixture)
         }
 
         // 4) The BYPASSRLS role legitimately sees both clinics (cross-tenant path).
-        await using (var bypass = await OpenAsync(fixture.BypassConnectionString, scopedClinic: null))
+        await using (var bypass = await OpenAsync(fixture.BypassConnectionStringUnpooled, scopedClinic: null))
         {
             foreach (var table in TenantTables)
             {
@@ -169,7 +169,7 @@ public sealed class RlsEnforcementTests(Infrastructure.PostgresFixture fixture)
 
         // Scoped to A, attempt to UPDATE and DELETE clinic B's rows: RLS makes them invisible,
         // so every statement affects ZERO rows.
-        await using (var appAsA = await OpenAsync(fixture.AppConnectionString, clinicA))
+        await using (var appAsA = await OpenAsync(fixture.AppConnectionStringUnpooled, clinicA))
         {
             foreach (var table in TenantTables)
             {
@@ -184,7 +184,7 @@ public sealed class RlsEnforcementTests(Infrastructure.PostgresFixture fixture)
         }
 
         // Confirm B's rows survived, via the BYPASSRLS role.
-        await using (var bypass = await OpenAsync(fixture.BypassConnectionString, scopedClinic: null))
+        await using (var bypass = await OpenAsync(fixture.BypassConnectionStringUnpooled, scopedClinic: null))
         {
             foreach (var table in TenantTables)
             {

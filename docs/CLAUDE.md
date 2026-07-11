@@ -15,7 +15,7 @@ Read `specs/001-clinic-queue-mvp/spec.md` (what), `plan.md` (how), `tasks.md` (o
 
 ## Golden Rules (never violate)
 
-1. **Tenant isolation is sacred.** Every data access is scoped by `clinic_id`. Never read `clinic_id` from request body/query/header — only from the signed JWT via `ITenantProvider`. Every new entity that holds clinic data MUST have `ClinicId` and be covered by an isolation test.
+1. **Tenant isolation is sacred.** Every data access is scoped by `clinic_id`. Never read `clinic_id` from request body/query/header — only from the signed JWT via `ITenantProvider`. Every new entity that holds clinic data MUST have `ClinicId` and be covered by an isolation test. **Pre-auth / no-tenant writes** (anonymous clinic sign-up, registration-with-clinic, patient join before a clinic claim exists) run under the app role with an EMPTY `app.current_clinic`, so the RLS `WITH CHECK` will REJECT any insert into a clinic-scoped table. These legitimate onboarding writes MUST go through `PrivilegedDbContext` (BYPASSRLS) with each row pinned to an explicit `ClinicId` and a per-row scope guard — never "fix" the resulting 500 by moving the write back onto the app context (that only passes because tests wrongly ran as superuser). See `ClinicEndpoints.JoinAsPatientAsync` / `CreateClinicAsync` and `AuthEndpoints.RegisterAsync`.
 2. **No secrets in code.** Connection strings, keys, VAPID keys → environment variables / Docker secrets only. Never commit them.
 3. **Tenant filter at execution time, not model-build time.** Apply the filter in `BaseRepository<T>` via expression trees. Do NOT put a captured tenant id into an EF Core global filter that gets cached in the model (it pins the first tenant — known bug).
 4. **Queue numbering is transactional.** Any assignment of a real queue number happens inside a DB transaction with `SELECT ... FOR UPDATE` on the session row. Appointments use `RowVersion` for optimistic concurrency. Never assign numbers outside a lock.
@@ -77,6 +77,7 @@ Read `specs/001-clinic-queue-mvp/spec.md` (what), `plan.md` (how), `tasks.md` (o
 
 - Unit tests for domain logic (esp. urgent-injection algorithm, threshold labeling).
 - Integration tests (Testcontainers PostgreSQL) for repositories and endpoints.
+- **Integration tests MUST connect as the non-owner app role (`clinicqueue_app`, NOBYPASSRLS), exactly as production does. A test that runs as superuser proves nothing about RLS.** The container owner (`clinicqueue`) is for **seeding/migrations only**, never for exercising request-path behaviour. Request-path (WebApplicationFactory) tests use `AppRoleApiFactory`, which wires `Default → clinicqueue_app`, `Privileged → clinicqueue_bypassrls`, `Migrations → clinicqueue`. Only a test that specifically asserts the privileged/bypass path may drive an elevated role, and it must be named to say so (e.g. `RlsEnforcementTests` uses `fixture.BypassConnectionString` deliberately). A previous onboarding-write RLS bug shipped green under 89 superuser-run tests — do not reintroduce that blind spot.
 - **Isolation tests** (release gate): clinic A cannot read/write/report clinic B; tampered JWT `clinic_id` rejected.
 - **Concurrency test:** parallel arrival confirmations never yield duplicate queue numbers.
 - Do not mark a module done until its DoD in tasks.md is met.

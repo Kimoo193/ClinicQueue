@@ -28,37 +28,8 @@ namespace ClinicQueue.IntegrationTests.Performance;
 [Collection(Infrastructure.PostgresCollection.Name)]
 public sealed class LoadTests(Infrastructure.PostgresFixture fixture)
 {
+    // Same value as AppRoleApiFactory.SigningKey — used here to mint tokens the API will accept.
     private const string SigningKey = "integration-test-signing-key-32chars!!";
-
-    private sealed class ApiFactory(string connectionString) : WebApplicationFactory<Program>
-    {
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Development");
-            builder.UseSetting("ConnectionStrings:Default", connectionString);
-            builder.UseSetting("ConnectionStrings:Redis", "");
-            builder.UseSetting("Jwt:SigningKey", SigningKey);
-            builder.UseSetting("Jwt:Issuer", "ClinicQueue");
-            builder.UseSetting("Jwt:Audience", "ClinicQueue");
-            builder.UseSetting("Hangfire:Enabled", "false");
-            builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
-            builder.UseSetting("OpenApi:EnableUi", "true");
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = connectionString,
-                    ["ConnectionStrings:Redis"] = "",
-                    ["Jwt:SigningKey"] = SigningKey,
-                    ["Jwt:Issuer"] = "ClinicQueue",
-                    ["Jwt:Audience"] = "ClinicQueue",
-                    ["Hangfire:Enabled"] = "false",
-                    ["Database:ApplyMigrationsOnStartup"] = "false",
-                    ["OpenApi:EnableUi"] = "true"
-                });
-            });
-        }
-    }
 
     private static string CreateAccessToken(Guid userId, Guid clinicId, string role)
     {
@@ -78,6 +49,16 @@ public sealed class LoadTests(Infrastructure.PostgresFixture fixture)
             expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds);
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    // Seeding runs as the owner (migrations + tenant inserts). The API under test still connects
+    // as the non-owner app role via AppRoleApiFactory.
+    private AppDbContext OwnerContext()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .Options;
+        return new AppDbContext(options);
     }
 
     private async Task<(Guid ClinicId, Guid UserId, string Token)> SeedPatientAsync(AppDbContext db)
@@ -113,7 +94,7 @@ public sealed class LoadTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Status_read_p95_is_at_most_300ms()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         var client = factory.CreateClient();
 
         // Warm-up
@@ -140,9 +121,9 @@ public sealed class LoadTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Position_update_reaches_client_within_2_seconds()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
         await using var scope = factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await using var db = OwnerContext();
         var (clinicId, userId, token) = await SeedPatientAsync(db);
         var appointmentId = Guid.NewGuid();
 
@@ -184,9 +165,8 @@ public sealed class LoadTests(Infrastructure.PostgresFixture fixture)
     [Fact]
     public async Task Sustains_at_least_500_concurrent_SignalR_connections()
     {
-        await using var factory = new ApiFactory(fixture.ConnectionString);
-        await using var scope = factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await using var factory = new Infrastructure.AppRoleApiFactory(fixture);
+        await using var db = OwnerContext();
         var (clinicId, userId, token) = await SeedPatientAsync(db);
 
         const int target = 500;

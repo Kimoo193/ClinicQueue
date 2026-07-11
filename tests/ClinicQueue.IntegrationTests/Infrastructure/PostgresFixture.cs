@@ -25,11 +25,25 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <summary>Owner/superuser connection — bypasses RLS. Used for migrations and seeding.</summary>
     public string ConnectionString => _container.GetConnectionString();
 
-    /// <summary>Non-owner app role connection — RLS is ENFORCED (proves isolation).</summary>
+    /// <summary>
+    /// Non-owner app role connection — RLS is ENFORCED. POOLED, for the request-path host
+    /// (<see cref="AppRoleApiFactory"/>): the RlsConnectionInterceptor re-stamps app.current_clinic
+    /// on every open, so pooling is safe and avoids exhausting connections under load.
+    /// </summary>
     public string AppConnectionString => WithRole("clinicqueue_app", AppRolePassword);
 
-    /// <summary>BYPASSRLS role connection — cross-tenant reads/writes succeed by design.</summary>
+    /// <summary>BYPASSRLS role connection (POOLED) — cross-tenant reads/writes succeed by design.</summary>
     public string BypassConnectionString => WithRole("clinicqueue_bypassrls", BypassRolePassword);
+
+    /// <summary>
+    /// Non-owner app role connection, POOLING DISABLED — for raw-SQL RLS tests that manage the
+    /// app.current_clinic session variable by hand and must not inherit it from a recycled
+    /// connection. Do NOT use for the API host (see <see cref="AppConnectionString"/>).
+    /// </summary>
+    public string AppConnectionStringUnpooled => WithRole("clinicqueue_app", AppRolePassword, pooling: false);
+
+    /// <summary>BYPASSRLS role connection, POOLING DISABLED — for raw-SQL RLS tests.</summary>
+    public string BypassConnectionStringUnpooled => WithRole("clinicqueue_bypassrls", BypassRolePassword, pooling: false);
 
     public async Task InitializeAsync()
     {
@@ -39,13 +53,17 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public Task DisposeAsync() => _container.DisposeAsync().AsTask();
 
-    private string WithRole(string username, string password) =>
+    private string WithRole(string username, string password, bool pooling = true) =>
         new NpgsqlConnectionStringBuilder(ConnectionString)
         {
             Username = username,
             Password = password,
-            // Non-owner roles must not use the superuser's pooled connections.
-            Pooling = false,
+            Pooling = pooling,
+            // Postgres max_connections defaults to 100 with 3 reserved for superusers. The
+            // non-owner app role only reaches ~97 slots, so the default pool max of 100 would fail
+            // under load ("slots reserved for superuser"). Cap well below that; a handful of one-shot
+            // reads recycle fast, so a small bounded pool sustains the 500-connection SignalR gate.
+            MaxPoolSize = pooling ? 40 : 1,
         }.ConnectionString;
 
     private async Task ProvisionRolesAsync()
