@@ -119,6 +119,7 @@ public sealed class InstantEntryHandler : IInstantEntryHandler
 
         var clinic = await _db.Clinics.FirstAsync(c => c.Id == command.ClinicId, cancellationToken);
         var previousInstructions = await _notificationRules.SnapshotBookedInstructionsAsync(
+            command.ClinicId,
             session.Id,
             clinic.HeadToClinicThreshold,
             cancellationToken);

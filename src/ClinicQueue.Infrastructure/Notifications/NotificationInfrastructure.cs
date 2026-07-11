@@ -172,14 +172,13 @@ public sealed class NotificationDispatcher : INotificationDispatcher
 public sealed class OutboxDispatchJob
 {
     public const int MaxAttempts = 3;
+    private const int PerClinicBatchSize = 50;
 
     private readonly AppDbContext _db;
     private readonly INotificationDispatcher _dispatcher;
     private readonly ILogger<OutboxDispatchJob> _logger;
 
-    // Resolved by PrivilegedJobActivator inside a BYPASSRLS scope: the outbox is polled
-    // across all clinics, so this deliberately runs cross-tenant. Each notification carries
-    // its own ClinicId; downstream channels filter by it.
+    // Resolved by PrivilegedJobActivator inside a BYPASSRLS scope.
     public OutboxDispatchJob(
         AppDbContext db,
         INotificationDispatcher dispatcher,
@@ -190,20 +189,60 @@ public sealed class OutboxDispatchJob
         _logger = logger;
     }
 
+    /// <summary>
+    /// Dispatches pending outbox rows.
+    /// <para>
+    /// Why per-clinic batches (not one global Take(50) sweep): this job runs under BYPASSRLS,
+    /// so the database will not stop a bulk update from touching every tenant. Discovering
+    /// which clinics have work is a cheap Distinct on ClinicId; every subsequent read and
+    /// SaveChanges operates on rows already loaded with an explicit ClinicId predicate.
+    /// Downstream channels (e.g. Web Push) also filter subscriptions by
+    /// <c>(UserId, ClinicId)</c>. A global pending sweep would be fine for throughput only if
+    /// every mutation stayed ClinicId-predicated — per-clinic batches make that the default
+    /// structure rather than a discipline reviewers must remember.
+    /// </para>
+    /// </summary>
     [AutomaticRetry(Attempts = 0)]
     public async Task ProcessPendingAsync(CancellationToken cancellationToken = default)
     {
         var db = _db;
         var dispatcher = _dispatcher;
 
-        var pending = await db.OutboxNotifications
+        var clinicIds = await db.OutboxNotifications.AsNoTracking()
             .Where(n => n.Status == OutboxNotificationStatus.Pending && n.Attempts < MaxAttempts)
+            .Select(n => n.ClinicId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        foreach (var clinicId in clinicIds)
+        {
+            await ProcessClinicBatchAsync(db, dispatcher, clinicId, cancellationToken);
+        }
+    }
+
+    private async Task ProcessClinicBatchAsync(
+        AppDbContext db,
+        INotificationDispatcher dispatcher,
+        Guid clinicId,
+        CancellationToken cancellationToken)
+    {
+        var pending = await db.OutboxNotifications
+            .Where(n => n.ClinicId == clinicId
+                        && n.Status == OutboxNotificationStatus.Pending
+                        && n.Attempts < MaxAttempts)
             .OrderBy(n => n.CreatedAt)
-            .Take(50)
+            .Take(PerClinicBatchSize)
             .ToListAsync(cancellationToken);
 
         foreach (var notification in pending)
         {
+            if (notification.ClinicId != clinicId)
+            {
+                throw new InvalidOperationException(
+                    $"OutboxDispatchJob refused a notification whose ClinicId {notification.ClinicId} " +
+                    $"does not match batch clinic {clinicId}.");
+            }
+
             notification.Attempts += 1;
             notification.LastAttemptAt = DateTime.UtcNow;
 
@@ -214,14 +253,18 @@ public sealed class OutboxDispatchJob
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Outbox dispatch attempt {Attempt} failed for {Id}", notification.Attempts, notification.Id);
+                _logger.LogWarning(
+                    ex,
+                    "Outbox dispatch attempt {Attempt} failed for {Id} (clinic {ClinicId})",
+                    notification.Attempts,
+                    notification.Id,
+                    clinicId);
                 if (notification.Attempts >= MaxAttempts)
                 {
                     notification.Status = OutboxNotificationStatus.Failed;
                 }
                 else
                 {
-                    // Exponential backoff: re-queue via Hangfire with delay 2^attempts minutes
                     var delay = TimeSpan.FromMinutes(Math.Pow(2, notification.Attempts));
                     BackgroundJob.Schedule<OutboxDispatchJob>(
                         j => j.ProcessPendingAsync(CancellationToken.None),

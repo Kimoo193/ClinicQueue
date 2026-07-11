@@ -26,6 +26,7 @@ public interface IQueueNotificationRules
     /// WaitHome → HeadToClinic transitions (FR-071). Capture this before mutating the queue.
     /// </summary>
     Task<Dictionary<Guid, QueueInstruction>> SnapshotBookedInstructionsAsync(
+        Guid clinicId,
         Guid queueSessionId,
         int headToClinicThreshold,
         CancellationToken cancellationToken = default);
@@ -55,8 +56,10 @@ public sealed class QueueNotificationRules : IQueueNotificationRules
         CancellationToken cancellationToken = default)
     {
         // Peers must include Present/Inside so confirmed patients count toward "ahead".
+        // ClinicId is mandatory even when QueueSessionId is known — jobs run under BYPASSRLS.
         var sessionAppointments = await _db.Appointments
-            .Where(a => a.QueueSessionId == queueSessionId
+            .Where(a => a.ClinicId == clinicId
+                        && a.QueueSessionId == queueSessionId
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Completed
                         && a.Status != AppointmentStatus.Absent
@@ -104,12 +107,14 @@ public sealed class QueueNotificationRules : IQueueNotificationRules
     }
 
     public async Task<Dictionary<Guid, QueueInstruction>> SnapshotBookedInstructionsAsync(
+        Guid clinicId,
         Guid queueSessionId,
         int headToClinicThreshold,
         CancellationToken cancellationToken = default)
     {
         var peers = await _db.Appointments.AsNoTracking()
-            .Where(a => a.QueueSessionId == queueSessionId
+            .Where(a => a.ClinicId == clinicId
+                        && a.QueueSessionId == queueSessionId
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Completed
                         && a.Status != AppointmentStatus.Absent

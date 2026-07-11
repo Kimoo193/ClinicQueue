@@ -104,6 +104,7 @@ public sealed class AssignRealNumberHandler : IAssignRealNumberHandler
             .FirstAsync(c => c.Id == command.ClinicId, cancellationToken);
 
         var previousInstructions = await _notificationRules.SnapshotBookedInstructionsAsync(
+            command.ClinicId,
             session.Id,
             clinic.HeadToClinicThreshold,
             cancellationToken);
