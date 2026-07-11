@@ -32,11 +32,11 @@ Postgres 16  ·  Redis 7 (SignalR backplane + Hangfire as configured)
 
 Intended three-layer model (constitution / plan):
 
-1. **JWT `clinic_id` claim** via `ITenantProvider` — do not trust body/query/header for tenant id.
+1. **JWT `clinic_id` claim** via `ITenantProvider` — do not trust body/query/header for tenant id. The claim is re-validated against an active `ClinicMembership` at request time (`ActiveMembershipHandler`); tokens are tenant-scoped (one `clinic_id` + the role held **in that clinic**), switched via `POST /api/v1/auth/switch-clinic`.
 2. **Execution-time filters** — `BaseRepository<T>` exists for clinic-scoped entities; many handlers currently query `IAppDbContext` with explicit `ClinicId` predicates (verify when adding new paths).
-3. **PostgreSQL RLS** — migrations `ENABLE ROW LEVEL SECURITY` on clinic-scoped tables. Default compose uses table-owner role `clinicqueue`; owner bypasses RLS unless `FORCE ROW LEVEL SECURITY` and a non-owner app role are introduced. Treat app-layer filters + isolation tests as the active control until that ops change lands.
+3. **PostgreSQL RLS (now enforced)** — clinic-scoped tables have RLS **ENABLED and FORCED** (`AddForceRlsAndAppRoleGrants`), with the fail-closed `tenant_isolation` policy `"ClinicId"::text = NULLIF(current_setting('app.current_clinic', true), '')`. The application connects as the non-owner, non-`BYPASSRLS` role **`clinicqueue_app`**, so RLS is a real control, not a bypassed one. `RlsConnectionInterceptor` sets `app.current_clinic` per connection from the JWT. Migrations run as the owner `clinicqueue`; legitimate cross-tenant work (SuperAdmin/platform handlers via `IPrivilegedDbContext`, background jobs via `PrivilegedJobActivator`) uses the dedicated **`clinicqueue_bypassrls`** role — never by disabling the policy. See `docs/configuration.md` → *Database roles*.
 
-Isolation release gate: `tests/.../Isolation/TenantIsolationTests.cs`.
+Isolation release gates: `tests/.../Isolation/TenantIsolationTests.cs` (repository layer) and `tests/.../Isolation/RlsEnforcementTests.cs` (raw SQL — proves RLS itself blocks cross-tenant reads/writes and fails closed when the tenant is unset).
 
 ## Queue numbering
 

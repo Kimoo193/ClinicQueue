@@ -29,6 +29,7 @@ OpenAPI document + Scalar UI: Development, or Production when `OpenApi:EnableUi=
 | POST | `/auth/login` | Anonymous + rate limit |
 | POST | `/auth/register` | Anonymous + rate limit |
 | POST | `/auth/refresh` | Anonymous + rate limit |
+| POST | `/auth/switch-clinic` | Authenticated (re-issues a token scoped to another clinic the user is a member of) |
 | POST | `/auth/logout` | Authenticated |
 | POST | `/clinics` | Anonymous (creates clinic + admin) |
 | PATCH | `/clinics/{clinicId}/branding` | ClinicOwner |

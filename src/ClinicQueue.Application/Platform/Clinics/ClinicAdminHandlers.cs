@@ -45,9 +45,9 @@ public interface ISuspendClinicHandler
 
 public sealed class ListAdminClinicsHandler : IListAdminClinicsHandler
 {
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public ListAdminClinicsHandler(IAppDbContext db) => _db = db;
+    public ListAdminClinicsHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<AdminClinicListResult> HandleAsync(
         ListAdminClinicsQuery query,
@@ -95,9 +95,9 @@ public sealed class ListAdminClinicsHandler : IListAdminClinicsHandler
 
 public sealed class ActivateClinicHandler : IActivateClinicHandler
 {
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public ActivateClinicHandler(IAppDbContext db) => _db = db;
+    public ActivateClinicHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<ClinicLifecycleResult> HandleAsync(
         Guid clinicId,
@@ -114,9 +114,9 @@ public sealed class ActivateClinicHandler : IActivateClinicHandler
 
 public sealed class SuspendClinicHandler : ISuspendClinicHandler
 {
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public SuspendClinicHandler(IAppDbContext db) => _db = db;
+    public SuspendClinicHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<ClinicLifecycleResult> HandleAsync(
         Guid clinicId,

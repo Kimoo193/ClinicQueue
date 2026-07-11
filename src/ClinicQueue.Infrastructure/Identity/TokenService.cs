@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using ClinicQueue.Application.Identity;
 using ClinicQueue.Domain.Identity;
 using ClinicQueue.Infrastructure.Authorization;
 using ClinicQueue.Infrastructure.Persistence;
@@ -48,11 +49,13 @@ public sealed class TokenService : ITokenService
     public const string CsrfCookieName = "cq_csrf";
 
     private readonly AppDbContext _db;
+    private readonly IMembershipDirectory _memberships;
     private readonly JwtOptions _options;
 
-    public TokenService(AppDbContext db, IOptions<JwtOptions> options)
+    public TokenService(AppDbContext db, IMembershipDirectory memberships, IOptions<JwtOptions> options)
     {
         _db = db;
+        _memberships = memberships;
         _options = options.Value;
     }
 
@@ -101,12 +104,11 @@ public sealed class TokenService : ITokenService
 
         existing.RevokedAt = DateTime.UtcNow;
 
-        var roles = await _db.ClinicMemberships
-            .AsNoTracking()
-            .Where(m => m.UserId == existing.UserId && m.Status == MembershipStatus.Active)
-            .Select(m => m.Role.ToString())
-            .Distinct()
-            .ToListAsync(cancellationToken);
+        // Tenant-scoped tokens: the refreshed token carries ONLY the roles the user holds in the
+        // clinic the refresh token was issued for — never roles aggregated across other clinics.
+        var roles = existing.ClinicId is { } clinicId
+            ? (await _memberships.GetActiveRolesAsync(existing.UserId, clinicId, cancellationToken)).ToList()
+            : new List<string>();
 
         if (existing.User.IsSuperAdmin)
         {

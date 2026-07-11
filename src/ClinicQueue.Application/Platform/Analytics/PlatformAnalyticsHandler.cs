@@ -36,9 +36,9 @@ public interface IPlatformAnalyticsHandler
 /// <summary>Platform-wide usage and revenue analytics for SuperAdmin (FR-104).</summary>
 public sealed class PlatformAnalyticsHandler : IPlatformAnalyticsHandler
 {
-    private readonly IAppDbContext _db;
+    private readonly IPrivilegedDbContext _db;
 
-    public PlatformAnalyticsHandler(IAppDbContext db) => _db = db;
+    public PlatformAnalyticsHandler(IPrivilegedDbContext db) => _db = db;
 
     public async Task<PlatformAnalyticsDto> HandleAsync(
         PlatformAnalyticsQuery query,
