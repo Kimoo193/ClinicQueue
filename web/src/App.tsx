@@ -1,17 +1,28 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
-import { Button } from "@/components/ui/button";
+import { AuthProvider } from "@/features/auth/AuthProvider";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
 import { AdminConsolePage } from "@/features/admin-console/AdminConsolePage";
 import { DoctorConsolePage } from "@/features/doctor-console/DoctorConsolePage";
 import { OwnerReportsPage } from "@/features/owner-reports/OwnerReportsPage";
 import { PatientBookingsPage } from "@/features/patient-bookings/PatientBookingsPage";
 import { PatientMedicalPage } from "@/features/patient-medical/PatientMedicalPage";
 import { PatientQueuePage } from "@/features/patient-queue/PatientQueuePage";
+import { QueueStatesPreviewPage } from "@/features/patient-queue/QueueStatesPreviewPage";
+import { QueueHubProvider } from "@/features/realtime/QueueHubProvider";
 import { ReceptionConsolePage } from "@/features/reception-console/ReceptionConsolePage";
 import { ReceptionDayClosePage } from "@/features/reception-dayclose/ReceptionDayClosePage";
-import { applyDocumentDirection } from "@/i18n";
+import { AdminLayout } from "@/layouts/AdminLayout";
+import { PatientLayout } from "@/layouts/PatientLayout";
+import { PublicLayout } from "@/layouts/PublicLayout";
+import { RequireRole } from "@/layouts/RequireRole";
+import { StaffLayout } from "@/layouts/StaffLayout";
+import { ClinicEntryPage } from "@/pages/ClinicEntryPage";
+import { FindClinicPage } from "@/pages/FindClinicPage";
+import { ForbiddenPage } from "@/pages/ForbiddenPage";
+import { LandingPage } from "@/pages/LandingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,188 +33,66 @@ const queryClient = new QueryClient({
   },
 });
 
-type View =
-  | "patient"
-  | "bookings"
-  | "medical"
-  | "reception"
-  | "dayclose"
-  | "doctor"
-  | "owner"
-  | "admin";
-
-function AppShell() {
-  const { t, i18n } = useTranslation();
-  const [clinicId, setClinicId] = useState(
-    () => localStorage.getItem("cq_clinic_id") ?? "",
-  );
-  const [view, setView] = useState<View>(
-    () => (localStorage.getItem("cq_view") as View) ?? "patient",
-  );
-
-  useEffect(() => {
-    applyDocumentDirection(i18n.language);
-  }, [i18n.language]);
-
-  const toggleLanguage = () => {
-    const next = i18n.language.startsWith("ar") ? "en" : "ar";
-    void i18n.changeLanguage(next);
-  };
-
-  const onClinicIdChange = (value: string) => {
-    setClinicId(value);
-    localStorage.setItem("cq_clinic_id", value);
-  };
-
-  const onViewChange = (next: View) => {
-    setView(next);
-    localStorage.setItem("cq_view", next);
-  };
-
+function AppRoutes() {
   return (
-    <main id="main-content" className="cq-app-shell" lang={i18n.language}>
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:shadow-sm"
-      >
-        {t("a11y.skipToContent")}
-      </a>
-      <div className="cq-app-frame">
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <p className="cq-brand-mark">{t("app.name")}</p>
-            <p className="text-sm text-muted-foreground">{t("app.tagline")}</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={toggleLanguage}
-            aria-label={t("language.toggle")}
-          >
-            {i18n.language.startsWith("ar") ? t("language.en") : t("language.ar")}
-          </Button>
-        </header>
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route index element={<LandingPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+        <Route path="find-clinic" element={<FindClinicPage />} />
+        <Route path="r/:clinicSlug" element={<ClinicEntryPage />} />
+      </Route>
 
-        <nav className="cq-nav" aria-label={t("a11y.primaryNav")}>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "patient" ? "default" : "ghost"}
-            onClick={() => onViewChange("patient")}
-            aria-current={view === "patient" ? "page" : undefined}
-          >
-            {t("nav.patient")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "bookings" ? "default" : "ghost"}
-            onClick={() => onViewChange("bookings")}
-            aria-current={view === "bookings" ? "page" : undefined}
-          >
-            {t("nav.bookings")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "medical" ? "default" : "ghost"}
-            onClick={() => onViewChange("medical")}
-            aria-current={view === "medical" ? "page" : undefined}
-          >
-            {t("nav.medical")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "reception" ? "default" : "ghost"}
-            onClick={() => onViewChange("reception")}
-            aria-current={view === "reception" ? "page" : undefined}
-          >
-            {t("nav.reception")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "dayclose" ? "default" : "ghost"}
-            onClick={() => onViewChange("dayclose")}
-            aria-current={view === "dayclose" ? "page" : undefined}
-          >
-            {t("nav.dayclose")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "doctor" ? "default" : "ghost"}
-            onClick={() => onViewChange("doctor")}
-            aria-current={view === "doctor" ? "page" : undefined}
-          >
-            {t("nav.doctor")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "owner" ? "default" : "ghost"}
-            onClick={() => onViewChange("owner")}
-            aria-current={view === "owner" ? "page" : undefined}
-          >
-            {t("nav.owner")}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "admin" ? "default" : "ghost"}
-            onClick={() => onViewChange("admin")}
-            aria-current={view === "admin" ? "page" : undefined}
-          >
-            {t("nav.admin")}
-          </Button>
-        </nav>
+      {import.meta.env.DEV ? (
+        <Route path="dev/queue-states" element={<QueueStatesPreviewPage />} />
+      ) : null}
 
-        {view !== "admin" ? (
-          <label className="cq-label max-w-md">
-            <span>{t("app.clinicId")}</span>
-            <input
-              value={clinicId}
-              onChange={(e) => onClinicIdChange(e.target.value)}
-              placeholder={t("app.clinicIdPlaceholder")}
-              aria-label={t("app.clinicId")}
-              className="cq-field-mono"
-            />
-          </label>
-        ) : null}
+      <Route path="app" element={<PatientLayout />}>
+        <Route path="queue" element={<PatientQueuePage />} />
+        <Route path="bookings" element={<PatientBookingsPage />} />
+        <Route path="medical" element={<PatientMedicalPage />} />
+      </Route>
 
-        {view === "admin" ? (
-          <AdminConsolePage />
-        ) : clinicId ? (
-          view === "reception" ? (
-            <ReceptionConsolePage clinicId={clinicId} />
-          ) : view === "dayclose" ? (
-            <ReceptionDayClosePage clinicId={clinicId} />
-          ) : view === "doctor" ? (
-            <DoctorConsolePage clinicId={clinicId} />
-          ) : view === "owner" ? (
-            <OwnerReportsPage clinicId={clinicId} />
-          ) : view === "bookings" ? (
-            <PatientBookingsPage clinicId={clinicId} />
-          ) : view === "medical" ? (
-            <PatientMedicalPage clinicId={clinicId} />
-          ) : (
-            <PatientQueuePage clinicId={clinicId} />
-          )
-        ) : (
-          <p className="cq-banner-warning" role="status">
-            {t("status.enterClinicId")}
-          </p>
-        )}
-      </div>
-    </main>
+      <Route path="reception" element={<StaffLayout />}>
+        <Route element={<RequireRole roles={["Receptionist"]} />}>
+          <Route index element={<ReceptionConsolePage />} />
+          <Route path="day-close" element={<ReceptionDayClosePage />} />
+        </Route>
+      </Route>
+
+      <Route path="doctor" element={<StaffLayout />}>
+        <Route element={<RequireRole roles={["Doctor"]} />}>
+          <Route index element={<DoctorConsolePage />} />
+        </Route>
+      </Route>
+
+      <Route path="owner" element={<StaffLayout />}>
+        <Route element={<RequireRole roles={["ClinicOwner"]} />}>
+          <Route path="reports" element={<OwnerReportsPage />} />
+        </Route>
+      </Route>
+
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<AdminConsolePage />} />
+      </Route>
+
+      <Route path="forbidden" element={<ForbiddenPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell />
+      <BrowserRouter>
+        <AuthProvider>
+          <QueueHubProvider>
+            <AppRoutes />
+          </QueueHubProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace ClinicQueue.Application.Identity.Auth;
 
-public sealed record RegisterRequest(string EmailOrPhone, string Password);
+public sealed record RegisterRequest(string EmailOrPhone, string Password, Guid? ClinicId = null);
 public sealed record LoginRequest(string EmailOrPhone, string Password, Guid? ClinicId = null);
 
 /// <summary>One clinic the user is an active member of (for the client's clinic switcher).</summary>

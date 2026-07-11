@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
+import { useQueueHub } from "@/features/realtime/QueueHubProvider";
 import { todayInClinicTimezone } from "@/lib/datetime";
 import { ensurePushSubscription } from "@/serviceWorker/push";
 
@@ -13,23 +14,46 @@ import {
   type PatientAppointment,
   type PositionUpdate,
 } from "./api";
+import {
+  LiveQueueCard,
+  LiveQueueEmpty,
+  LiveQueueError,
+  LiveQueueSkeleton,
+} from "./LiveQueueCard";
+import {
+  NOTIFICATION_TYPE,
+  parseAppointmentType,
+  resolveQueueVisualState,
+  type HubNotification,
+  type PauseResumePayload,
+  type YourTurnPayload,
+} from "./liveQueueTypes";
 
 const DEFAULT_TIMEZONE = "Africa/Cairo";
 
 type Props = {
-  clinicId: string;
   clinicTimezone?: string;
 };
 
+type LiveExtras = {
+  pausedById: Record<string, boolean>;
+  yourTurnById: Record<string, boolean>;
+};
+
 export function PatientQueuePage({
-  clinicId,
   clinicTimezone = DEFAULT_TIMEZONE,
-}: Props) {
-  const { t, i18n } = useTranslation();
+}: Props = {}) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
+  const { connection } = useQueueHub();
   const [companionsCount, setCompanionsCount] = useState(0);
   const [possibleUrgent, setPossibleUrgent] = useState(false);
   const [liveById, setLiveById] = useState<Record<string, PositionUpdate>>({});
+  const [extras, setExtras] = useState<LiveExtras>({
+    pausedById: {},
+    yourTurnById: {},
+  });
   const [formError, setFormError] = useState<string | null>(null);
 
   const appointmentsQuery = useQuery({
@@ -45,37 +69,76 @@ export function PatientQueuePage({
       // Request push only after a successful book (not on every page load).
       void ensurePushSubscription(clinicId);
     },
-    onError: (error: Error) => {
-      setFormError(error.message);
+    onError: () => {
+      setFormError(t("patientQueue.bookFailed"));
     },
   });
 
+  // Subscribe to live position updates from the session-scoped hub (AuthProvider lifecycle).
   useEffect(() => {
-    if (!clinicId) {
+    if (!connection) {
       return;
     }
 
-    const connection = new HubConnectionBuilder()
-      .withUrl("/hubs/queue", { withCredentials: true })
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build();
-
-    connection.on("positionUpdated", (update: PositionUpdate) => {
+    const onPosition = (update: PositionUpdate) => {
       setLiveById((prev) => ({ ...prev, [update.appointmentId]: update }));
-    });
-
-    void connection
-      .start()
-      .then(() => connection.invoke("JoinClinic", clinicId))
-      .catch((err: unknown) => {
-        console.warn("SignalR connect failed", err);
-      });
-
-    return () => {
-      void connection.stop();
+      if (update.instruction === "yourTurn") {
+        setExtras((prev) => ({
+          ...prev,
+          yourTurnById: { ...prev.yourTurnById, [update.appointmentId]: true },
+          pausedById: { ...prev.pausedById, [update.appointmentId]: false },
+        }));
+      }
     };
-  }, [clinicId]);
+
+    const onNotification = (raw: HubNotification) => {
+      const typeNum =
+        typeof raw.type === "number"
+          ? raw.type
+          : typeof raw.type === "string"
+            ? Number.parseInt(raw.type, 10)
+            : NaN;
+
+      let payload: PauseResumePayload & YourTurnPayload = {};
+      if (raw.payloadJson) {
+        try {
+          payload = JSON.parse(raw.payloadJson) as PauseResumePayload &
+            YourTurnPayload;
+        } catch {
+          return;
+        }
+      }
+
+      const appointmentId = payload.appointmentId;
+      if (!appointmentId) {
+        return;
+      }
+
+      if (typeNum === NOTIFICATION_TYPE.YourTurn) {
+        setExtras((prev) => ({
+          ...prev,
+          yourTurnById: { ...prev.yourTurnById, [appointmentId]: true },
+          pausedById: { ...prev.pausedById, [appointmentId]: false },
+        }));
+        return;
+      }
+
+      if (typeNum === NOTIFICATION_TYPE.PauseResume) {
+        const paused = payload.action === "pause";
+        setExtras((prev) => ({
+          ...prev,
+          pausedById: { ...prev.pausedById, [appointmentId]: paused },
+        }));
+      }
+    };
+
+    connection.on("positionUpdated", onPosition);
+    connection.on("notification", onNotification);
+    return () => {
+      connection.off("positionUpdated", onPosition);
+      connection.off("notification", onNotification);
+    };
+  }, [connection]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -89,6 +152,7 @@ export function PatientQueuePage({
   };
 
   const appointments = appointmentsQuery.data ?? [];
+  const isLive = Boolean(connection);
 
   return (
     <section className="cq-page">
@@ -97,7 +161,37 @@ export function PatientQueuePage({
         <p className="cq-page-subtitle">{t("patientQueue.subtitle")}</p>
       </header>
 
+      <div className="flex flex-col gap-4">
+        {appointmentsQuery.isLoading ? <LiveQueueSkeleton /> : null}
+
+        {appointmentsQuery.isError ? (
+          <LiveQueueError onRetry={() => void appointmentsQuery.refetch()} />
+        ) : null}
+
+        {!appointmentsQuery.isLoading &&
+        !appointmentsQuery.isError &&
+        appointments.length === 0 ? (
+          <LiveQueueEmpty />
+        ) : null}
+
+        {!appointmentsQuery.isLoading && !appointmentsQuery.isError
+          ? appointments.map((appointment) => (
+              <AppointmentHero
+                key={appointment.appointmentId}
+                appointment={appointment}
+                live={liveById[appointment.appointmentId]}
+                paused={Boolean(extras.pausedById[appointment.appointmentId])}
+                forcedYourTurn={Boolean(
+                  extras.yourTurnById[appointment.appointmentId],
+                )}
+                isLive={isLive}
+              />
+            ))
+          : null}
+      </div>
+
       <form onSubmit={onSubmit} className="cq-section gap-4">
+        <h2 className="cq-section-title">{t("patientQueue.bookSection")}</h2>
         <label className="cq-label">
           <span>{t("patientQueue.companions")}</span>
           <input
@@ -107,7 +201,11 @@ export function PatientQueuePage({
             value={companionsCount}
             onChange={(e) => setCompanionsCount(Number(e.target.value))}
             className="cq-field"
+            aria-describedby="companions-hint"
           />
+          <span id="companions-hint" className="text-xs text-muted-foreground">
+            {t("patientQueue.companionsHint")}
+          </span>
         </label>
 
         <label className="cq-check">
@@ -125,82 +223,63 @@ export function PatientQueuePage({
           </p>
         ) : null}
 
-        <Button type="submit" disabled={bookMutation.isPending}>
+        <Button
+          type="submit"
+          className="cq-touch-btn w-full sm:w-auto"
+          disabled={bookMutation.isPending}
+        >
           {bookMutation.isPending
             ? t("patientQueue.booking")
             : t("patientQueue.book")}
         </Button>
       </form>
-
-      <div className="cq-section">
-        <h2 className="cq-section-title">{t("patientQueue.myBookings")}</h2>
-        {appointmentsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("patientQueue.loading")}</p>
-        ) : null}
-        {appointments.length === 0 && !appointmentsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("patientQueue.empty")}</p>
-        ) : null}
-        <ul className="flex flex-col gap-3">
-          {appointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.appointmentId}
-              appointment={appointment}
-              live={liveById[appointment.appointmentId]}
-              locale={i18n.language}
-            />
-          ))}
-        </ul>
-      </div>
     </section>
   );
 }
 
-function AppointmentCard({
+function AppointmentHero({
   appointment,
   live,
-  locale,
+  paused,
+  forcedYourTurn,
+  isLive,
 }: {
   appointment: PatientAppointment;
   live?: PositionUpdate;
-  locale: string;
+  paused: boolean;
+  forcedYourTurn: boolean;
+  isLive: boolean;
 }) {
-  const { t } = useTranslation();
   const countAhead = live?.countAhead ?? appointment.countAhead ?? null;
-  const instruction = live?.instruction ?? appointment.instruction ?? null;
-  const isRtl = locale.startsWith("ar");
+  const instruction =
+    forcedYourTurn
+      ? ("yourTurn" as const)
+      : (live?.instruction ?? appointment.instruction ?? null);
+
+  const visualState = resolveQueueVisualState({
+    status: appointment.status,
+    instruction,
+    paused,
+  });
+
+  const hasReal =
+    appointment.realNumber !== null &&
+    appointment.realNumber !== undefined &&
+    appointment.realNumber > 0;
 
   return (
-    <li className="cq-card">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-2xl font-semibold tabular-nums tracking-tight">
-          {t("patientQueue.tempNumber", { number: appointment.temporaryNumber })}
-        </p>
-        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {appointment.status}
-        </span>
-      </div>
-
-      {countAhead !== null ? (
-        <p className="mt-2 text-sm text-foreground">
-          {t("patientQueue.countAhead", { count: countAhead })}
-        </p>
-      ) : null}
-
-      {instruction ? (
-        <p
-          className={`mt-3 ${
-            instruction === "headToClinic"
-              ? "cq-instruction-go"
-              : "cq-instruction-wait"
-          }`}
-          dir={isRtl ? "rtl" : "ltr"}
-          role="status"
-        >
-          {instruction === "headToClinic"
-            ? t("patientQueue.instruction.headToClinic")
-            : t("patientQueue.instruction.waitHome")}
-        </p>
-      ) : null}
-    </li>
+    <LiveQueueCard
+      model={{
+        appointmentId: appointment.appointmentId,
+        displayNumber: hasReal
+          ? appointment.realNumber!
+          : appointment.temporaryNumber,
+        numberKind: hasReal ? "real" : "temporary",
+        countAhead,
+        visualState,
+        appointmentType: parseAppointmentType(appointment.type),
+        isLive,
+      }}
+    />
   );
 }

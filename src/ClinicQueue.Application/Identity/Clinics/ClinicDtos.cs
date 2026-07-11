@@ -11,6 +11,16 @@ public sealed record CreateClinicRequest(
 
 public sealed record CreateClinicResponse(Guid ClinicId, string SubdomainSlug, string? QrCodeUrl);
 
+/// <summary>Public branding profile for QR / subdomain entry (FR-003, FR-007). Not an auth authority.</summary>
+public sealed record PublicClinicProfileResponse(
+    Guid ClinicId,
+    string Name,
+    string Specialty,
+    string SubdomainSlug,
+    string? LogoUrl,
+    string? PrimaryColor,
+    string? SecondaryColor);
+
 public sealed record UpdateBrandingRequest(string? LogoUrl, string? PrimaryColor, string? SecondaryColor);
 
 public sealed record UpdateSettingsRequest(

@@ -2,13 +2,10 @@
   "app": {
     "name": "ClinicQueue",
     "tagline": "Smart clinic queue management",
-    "clinicId": "Clinic ID",
-    "clinicIdPlaceholder": "00000000-0000-0000-0000-000000000000",
-    "role": "View"
+    "activeClinic": "Clinic: {{name}}"
   },
   "status": {
-    "ready": "Web app is ready",
-    "enterClinicId": "Enter a clinic ID above to open this view."
+    "ready": "Web app is ready"
   },
   "language": {
     "ar": "العربية",
@@ -19,22 +16,96 @@
     "skipToContent": "Skip to content",
     "primaryNav": "Primary"
   },
+  "landing": {
+    "title": "Welcome to ClinicQueue",
+    "subtitle": "Book appointments and track your place in the clinic queue."
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Use your email or phone and password.",
+    "registerTitle": "Create an account",
+    "registerSubtitle": "One account works across clinics you join.",
+    "emailOrPhone": "Email or phone",
+    "password": "Password",
+    "login": "Sign in",
+    "loggingIn": "Signing in…",
+    "register": "Register",
+    "registering": "Creating account…",
+    "logout": "Sign out",
+    "loginLink": "Sign in",
+    "registerLink": "Register",
+    "noAccount": "No account yet?",
+    "hasAccount": "Already have an account?",
+    "loginFailed": "Sign-in failed. Check your credentials.",
+    "registerFailed": "Registration failed.",
+    "switchFailed": "Could not switch clinic.",
+    "chooseClinicTitle": "Choose a clinic",
+    "chooseClinicSubtitle": "You belong to more than one clinic. Pick which one to open.",
+    "clinicSwitcher": "Active clinic",
+    "loading": "Checking session…",
+    "loadingClinic": "Loading clinic…",
+    "clinicNotFoundTitle": "Clinic not found",
+    "clinicNotFoundSubtitle": "This registration link is invalid or the clinic is unavailable.",
+    "clinicEntrySubtitle": "{{specialty}} — register or sign in to continue.",
+    "forbiddenTitle": "Not authorized",
+    "forbiddenSubtitle": "You do not have permission to open this page for the current clinic.",
+    "backHome": "Back to home",
+    "findClinicTitle": "Find your clinic",
+    "findClinicSubtitle": "Your account is ready. Join a clinic by entering its slug or scanning the clinic QR code.",
+    "findClinicSlugLabel": "Clinic slug",
+    "findClinicSlugPlaceholder": "e.g. dr-ghada",
+    "findClinicSlugRequired": "Enter a clinic slug to continue.",
+    "findClinicContinue": "Continue",
+    "findClinicQrTitle": "Have a QR code?",
+    "findClinicQrGuidance": "Ask reception for the clinic QR code, or open the link from /r/your-clinic-slug. That page lets you join as a patient.",
+    "joinClinic": "Join this clinic",
+    "joiningClinic": "Joining…",
+    "joinClinicFailed": "Could not join this clinic."
+  },
   "patientQueue": {
-    "title": "Book & track your place",
-    "subtitle": "Get a temporary number and watch your position update live.",
+    "title": "Your place in line",
+    "subtitle": "Your queue number updates live. We show how many patients are ahead — never a time estimate.",
     "companions": "Companions",
+    "companionsHint": "How many people are coming with you (0–20).",
     "possibleUrgent": "I may need urgent care (advisory)",
     "book": "Book appointment",
     "booking": "Booking…",
+    "bookFailed": "Booking did not go through. Please try again.",
+    "bookSection": "Book a new visit",
     "myBookings": "Your appointments",
-    "loading": "Loading…",
-    "empty": "No upcoming appointments yet.",
+    "loading": "Updating your queue…",
+    "emptyTitle": "No visit in the queue yet",
+    "empty": "Book below to get a temporary number and track your place live.",
+    "errorTitle": "Could not load your queue",
+    "error": "Check your connection and try again. Your place is safe if you already booked.",
+    "retry": "Try again",
     "tempNumber": "Temporary #{{number}}",
-    "countAhead": "{{count}} ahead of you",
+    "tempNumberLabel": "Temporary number",
+    "realNumberLabel": "Your queue number",
+    "numberAria": "{{kind}} {{number}}",
+    "countAhead": "{{count}} patients ahead",
+    "countAhead_one": "{{count}} patient ahead",
+    "countAhead_other": "{{count}} patients ahead",
+    "live": "Live",
+    "offline": "Reconnecting…",
+    "type": {
+      "normal": "Normal",
+      "urgent": "Urgent"
+    },
     "instruction": {
-      "waitHome": "Wait at home — you still have time.",
-      "headToClinic": "Head to the clinic now."
-    }
+      "waitHome": "Wait at home",
+      "headToClinic": "Head to the clinic now",
+      "yourTurn": "It's your turn",
+      "paused": "Clinic paused",
+      "pending": "Waiting for your place in line"
+    },
+    "instructionDetail": {
+      "waitHome": "Relax — you still have time before you need to leave.",
+      "headToClinic": "Make your way to the clinic. Keep this screen open.",
+      "yourTurn": "Please go to the reception desk now.",
+      "paused": "Your place is saved. We'll continue from here when the clinic resumes."
+    },
+    "previewTitle": "Queue states preview (dev)"
   },
   "reception": {
     "title": "Reception queue console",

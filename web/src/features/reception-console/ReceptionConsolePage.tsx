@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
 import { todayInClinicTimezone } from "@/lib/datetime";
 
 import {
@@ -19,16 +20,15 @@ import {
 const DEFAULT_TIMEZONE = "Africa/Cairo";
 
 type Props = {
-  clinicId: string;
   clinicTimezone?: string;
 };
 
 export function ReceptionConsolePage({
-  clinicId,
   clinicTimezone = DEFAULT_TIMEZONE,
-}: Props) {
+}: Props = {}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [patientRef, setPatientRef] = useState("");

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
 
 import {
   cancelUnserved,
@@ -14,13 +15,10 @@ import {
   type UnservedAppointment,
 } from "./api";
 
-type Props = {
-  clinicId: string;
-};
-
-export function ReceptionDayClosePage({ clinicId }: Props) {
+export function ReceptionDayClosePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
   const [actionError, setActionError] = useState<string | null>(null);
   const [unserved, setUnserved] = useState<UnservedAppointment[] | null>(null);
   const [autoCarried, setAutoCarried] = useState<number | null>(null);

@@ -2,81 +2,111 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource/tajawal/400.css";
+@import "@fontsource/tajawal/500.css";
+@import "@fontsource/tajawal/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
 /*
-  ClinicQueue visual language — clinical operations UI.
-  Emerald/teal trust + cool stone surfaces. No purple SaaS / cream-terracotta defaults.
-  PRODUCT.md / DESIGN.md are absent; tokens below encode the working brand.
+  ClinicQueue brand tokens (Phase B).
+  Hex palette is canonical — components use CSS variables / Tailwind theme, never hardcoded hex.
 */
 :root {
-  /* Arabic-capable stack first; Geist via --font-sans for Latin UI chrome */
-  font-family: "Segoe UI", Tahoma, "Geist Variable", Geneva, Verdana, sans-serif;
+  /* Brand palette */
+  --brand-primary: #1b3a6b;
+  --brand-primary-lt: #2a5298;
+  --brand-teal: #5bb8c1;
+  --brand-teal-lt: #a8dde2;
+  --brand-rose: #e8a0a0;
+  --brand-success: #4caf82;
+  --brand-warning: #f5a623;
+  --brand-danger: #e05c5c;
+  --brand-bg: #f7fafb;
+  --brand-surface: #ffffff;
+  --brand-muted: #6b8cae;
+  --brand-border: #e2edf5;
+
+  /* Aliases matching product brief names */
+  --primary: var(--brand-primary);
+  --primary-lt: var(--brand-primary-lt);
+  --teal: var(--brand-teal);
+  --teal-lt: var(--brand-teal-lt);
+  --rose: var(--brand-rose);
+  --success: var(--brand-success);
+  --warning: var(--brand-warning);
+  --danger: var(--brand-danger);
+  --bg: var(--brand-bg);
+  --surface: var(--brand-surface);
+  --muted-ink: var(--brand-muted);
+  --border: var(--brand-border);
+
+  /* shadcn / Tailwind semantic bridge */
+  --background: var(--brand-bg);
+  --foreground: var(--brand-primary);
+  --card: var(--brand-surface);
+  --card-foreground: var(--brand-primary);
+  --popover: var(--brand-surface);
+  --popover-foreground: var(--brand-primary);
+
+  --primary-foreground: #f5f9fc;
+
+  --secondary: color-mix(in srgb, var(--brand-teal-lt) 55%, var(--brand-surface));
+  --secondary-foreground: var(--brand-primary);
+
+  --muted: color-mix(in srgb, var(--brand-border) 70%, var(--brand-surface));
+  --muted-foreground: var(--brand-muted);
+
+  --accent: color-mix(in srgb, var(--brand-teal-lt) 45%, var(--brand-surface));
+  --accent-foreground: var(--brand-primary);
+
+  --destructive: var(--brand-danger);
+  --input: var(--brand-border);
+  --ring: var(--brand-teal);
+
+  --success-foreground: #f4fbf7;
+  --success-muted: color-mix(in srgb, var(--brand-success) 14%, var(--brand-surface));
+  --warning-foreground: #5a3d0a;
+  --warning-muted: color-mix(in srgb, var(--brand-warning) 16%, var(--brand-surface));
+  --info: var(--brand-teal);
+  --info-foreground: #0f3d44;
+  --info-muted: color-mix(in srgb, var(--brand-teal) 16%, var(--brand-surface));
+
+  /* App chrome — soft clinical wash (navy + teal, not cream) */
+  --app-wash-from: color-mix(in srgb, var(--brand-teal-lt) 35%, var(--brand-bg));
+  --app-wash-via: var(--brand-bg);
+  --app-wash-to: color-mix(in srgb, var(--brand-border) 40%, var(--brand-bg));
+  --divider: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+  --surface-tint: color-mix(in srgb, var(--brand-teal-lt) 18%, var(--brand-surface));
+
+  --chart-1: var(--brand-teal);
+  --chart-2: var(--brand-primary-lt);
+  --chart-3: var(--brand-warning);
+  --chart-4: var(--brand-success);
+  --chart-5: var(--brand-rose);
+  --radius: 0.625rem;
+  --sidebar: var(--brand-surface);
+  --sidebar-foreground: var(--brand-primary);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: #f5f9fc;
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--brand-primary);
+  --sidebar-border: var(--brand-border);
+  --sidebar-ring: var(--brand-teal);
+
+  /* Typography defaults (LTR). RTL overrides below. */
+  font-family: "Geist Variable", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
 
-  /* Surfaces — cool clinical wash */
-  --background: oklch(0.985 0.006 155);
-  --foreground: oklch(0.22 0.025 160);
-  --card: oklch(0.995 0.004 155);
-  --card-foreground: oklch(0.22 0.025 160);
-  --popover: oklch(0.995 0.004 155);
-  --popover-foreground: oklch(0.22 0.025 160);
-
-  /* Brand — deep clinical teal (actions, active nav) */
-  --primary: oklch(0.4 0.085 170);
-  --primary-foreground: oklch(0.99 0.01 170);
-
-  --secondary: oklch(0.94 0.012 155);
-  --secondary-foreground: oklch(0.28 0.03 160);
-  --muted: oklch(0.945 0.01 155);
-  /* ~4.6:1 on background — WCAG AA for secondary text */
-  --muted-foreground: oklch(0.45 0.02 160);
-  --accent: oklch(0.94 0.02 165);
-  --accent-foreground: oklch(0.28 0.04 165);
-
-  --destructive: oklch(0.5 0.18 25);
-  --border: oklch(0.88 0.015 155);
-  --input: oklch(0.88 0.015 155);
-  --ring: oklch(0.5 0.07 170);
-
-  /* Semantic (status / instructions) */
-  --success: oklch(0.42 0.09 155);
-  --success-foreground: oklch(0.98 0.01 155);
-  --success-muted: oklch(0.94 0.04 155);
-  --warning: oklch(0.55 0.12 75);
-  --warning-foreground: oklch(0.28 0.05 70);
-  --warning-muted: oklch(0.94 0.05 85);
-  --info: oklch(0.48 0.08 230);
-  --info-foreground: oklch(0.28 0.05 230);
-  --info-muted: oklch(0.94 0.03 230);
-
-  /* App chrome */
-  --app-wash-from: oklch(0.96 0.02 160);
-  --app-wash-via: oklch(0.975 0.008 100);
-  --app-wash-to: oklch(0.97 0.015 85);
-  --divider: oklch(0.22 0.04 160 / 12%);
-  --surface-tint: oklch(0.96 0.025 160 / 55%);
-
-  --chart-1: oklch(0.55 0.1 170);
-  --chart-2: oklch(0.5 0.08 230);
-  --chart-3: oklch(0.55 0.1 75);
-  --chart-4: oklch(0.45 0.06 160);
-  --chart-5: oklch(0.35 0.04 160);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.98 0.008 155);
-  --sidebar-foreground: oklch(0.22 0.025 160);
-  --sidebar-primary: oklch(0.4 0.085 170);
-  --sidebar-primary-foreground: oklch(0.99 0.01 170);
-  --sidebar-accent: oklch(0.94 0.02 165);
-  --sidebar-accent-foreground: oklch(0.28 0.04 165);
-  --sidebar-border: oklch(0.88 0.015 155);
-  --sidebar-ring: oklch(0.5 0.07 170);
+html[dir="rtl"] {
+  font-family: "Tajawal", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.7;
 }
 
 body {
@@ -92,6 +122,7 @@ body {
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-arabic: "Tajawal", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -134,6 +165,11 @@ body {
   --color-info-muted: var(--info-muted);
   --color-divider: var(--divider);
   --color-surface-tint: var(--surface-tint);
+  --color-teal: var(--teal);
+  --color-teal-lt: var(--teal-lt);
+  --color-primary-lt: var(--primary-lt);
+  --color-rose: var(--rose);
+  --color-surface: var(--surface);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -144,51 +180,46 @@ body {
 }
 
 .dark {
-  --background: oklch(0.18 0.02 160);
-  --foreground: oklch(0.96 0.01 155);
-  --card: oklch(0.22 0.02 160);
-  --card-foreground: oklch(0.96 0.01 155);
-  --popover: oklch(0.22 0.02 160);
-  --popover-foreground: oklch(0.96 0.01 155);
-  --primary: oklch(0.72 0.1 170);
-  --primary-foreground: oklch(0.2 0.04 170);
-  --secondary: oklch(0.28 0.02 160);
-  --secondary-foreground: oklch(0.96 0.01 155);
-  --muted: oklch(0.28 0.02 160);
-  --muted-foreground: oklch(0.75 0.02 155);
-  --accent: oklch(0.3 0.03 165);
-  --accent-foreground: oklch(0.96 0.01 155);
-  --destructive: oklch(0.7 0.16 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.65 0.08 170);
-  --success: oklch(0.7 0.1 155);
-  --success-foreground: oklch(0.2 0.04 155);
-  --success-muted: oklch(0.3 0.04 155);
-  --warning: oklch(0.75 0.1 85);
-  --warning-foreground: oklch(0.95 0.02 85);
-  --warning-muted: oklch(0.32 0.05 85);
-  --info: oklch(0.7 0.08 230);
-  --info-foreground: oklch(0.95 0.02 230);
-  --info-muted: oklch(0.3 0.04 230);
-  --app-wash-from: oklch(0.2 0.025 160);
-  --app-wash-via: oklch(0.18 0.015 140);
-  --app-wash-to: oklch(0.19 0.02 100);
-  --divider: oklch(1 0 0 / 12%);
-  --surface-tint: oklch(0.3 0.04 160 / 40%);
-  --chart-1: oklch(0.7 0.1 170);
-  --chart-2: oklch(0.65 0.08 230);
-  --chart-3: oklch(0.7 0.1 85);
-  --chart-4: oklch(0.55 0.06 160);
-  --chart-5: oklch(0.45 0.04 160);
-  --sidebar: oklch(0.22 0.02 160);
-  --sidebar-foreground: oklch(0.96 0.01 155);
-  --sidebar-primary: oklch(0.72 0.1 170);
-  --sidebar-primary-foreground: oklch(0.2 0.04 170);
-  --sidebar-accent: oklch(0.3 0.03 165);
-  --sidebar-accent-foreground: oklch(0.96 0.01 155);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.65 0.08 170);
+  --background: color-mix(in srgb, var(--brand-primary) 92%, black);
+  --foreground: #eef5fa;
+  --card: color-mix(in srgb, var(--brand-primary) 85%, black);
+  --card-foreground: #eef5fa;
+  --popover: color-mix(in srgb, var(--brand-primary) 85%, black);
+  --popover-foreground: #eef5fa;
+  --primary: var(--brand-teal);
+  --primary-foreground: var(--brand-primary);
+  --secondary: color-mix(in srgb, var(--brand-primary-lt) 40%, black);
+  --secondary-foreground: #eef5fa;
+  --muted: color-mix(in srgb, var(--brand-primary) 70%, black);
+  --muted-foreground: color-mix(in srgb, var(--brand-teal-lt) 70%, white);
+  --accent: color-mix(in srgb, var(--brand-teal) 25%, black);
+  --accent-foreground: #eef5fa;
+  --destructive: var(--brand-danger);
+  --border: color-mix(in srgb, white 12%, transparent);
+  --input: color-mix(in srgb, white 14%, transparent);
+  --ring: var(--brand-teal);
+  --success: var(--brand-success);
+  --success-foreground: #0a2a1a;
+  --success-muted: color-mix(in srgb, var(--brand-success) 25%, black);
+  --warning: var(--brand-warning);
+  --warning-foreground: #1a1205;
+  --warning-muted: color-mix(in srgb, var(--brand-warning) 25%, black);
+  --info: var(--brand-teal);
+  --info-foreground: #061a1d;
+  --info-muted: color-mix(in srgb, var(--brand-teal) 25%, black);
+  --app-wash-from: color-mix(in srgb, var(--brand-primary) 90%, black);
+  --app-wash-via: color-mix(in srgb, var(--brand-primary) 95%, black);
+  --app-wash-to: color-mix(in srgb, var(--brand-primary) 88%, black);
+  --divider: color-mix(in srgb, white 12%, transparent);
+  --surface-tint: color-mix(in srgb, var(--brand-teal) 12%, transparent);
+  --sidebar: color-mix(in srgb, var(--brand-primary) 85%, black);
+  --sidebar-foreground: #eef5fa;
+  --sidebar-primary: var(--brand-teal);
+  --sidebar-primary-foreground: var(--brand-primary);
+  --sidebar-accent: color-mix(in srgb, var(--brand-teal) 25%, black);
+  --sidebar-accent-foreground: #eef5fa;
+  --sidebar-border: color-mix(in srgb, white 12%, transparent);
+  --sidebar-ring: var(--brand-teal);
 }
 
 @layer base {
@@ -200,6 +231,9 @@ body {
   }
   html {
     @apply font-sans;
+  }
+  html[dir="rtl"] body {
+    font-family: var(--font-arabic);
   }
 }
 
@@ -319,6 +353,152 @@ body {
   .cq-touch-btn {
     @apply min-h-11 min-w-11;
   }
+
+  /* —— Patient live queue hero —— */
+  .cq-live-dot {
+    @apply relative inline-flex size-2.5 shrink-0 rounded-full bg-teal;
+  }
+
+  .cq-live-dot::after {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-teal;
+    animation: cq-live-pulse 2s ease-out infinite;
+  }
+
+  .cq-live-dot--on-dark {
+    background: color-mix(in srgb, white 88%, var(--teal));
+  }
+
+  .cq-live-dot--on-dark::after {
+    background: color-mix(in srgb, white 88%, var(--teal));
+  }
+
+  .cq-queue-number {
+    @apply text-[clamp(4.5rem,18vw,7.5rem)] leading-none font-bold tracking-tight tabular-nums text-primary;
+  }
+
+  .cq-queue-hero {
+    @apply relative overflow-hidden rounded-2xl border border-border bg-surface p-6 sm:p-8;
+  }
+
+  .cq-queue-hero[data-state="waitHome"] {
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--teal-lt) 40%, var(--surface)) 0%,
+      var(--surface) 55%
+    );
+  }
+
+  .cq-queue-hero[data-state="headToClinic"] {
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--teal) 22%, var(--surface)) 0%,
+      color-mix(in srgb, var(--warning) 14%, var(--surface)) 100%
+    );
+    border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+  }
+
+  .cq-queue-hero[data-state="yourTurn"] {
+    background: linear-gradient(
+      165deg,
+      var(--primary) 0%,
+      var(--primary-lt) 100%
+    );
+    border-color: var(--primary-lt);
+    color: var(--primary-foreground);
+  }
+
+  .cq-queue-hero[data-state="yourTurn"] .cq-queue-number {
+    color: var(--primary-foreground);
+  }
+
+  .cq-queue-hero[data-state="paused"] {
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--warning) 18%, var(--surface)) 0%,
+      var(--surface) 60%
+    );
+    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  }
+
+  .cq-queue-status {
+    @apply mt-5 rounded-xl px-4 py-3.5 text-center text-base font-semibold sm:text-lg;
+  }
+
+  .cq-queue-status[data-state="waitHome"] {
+    @apply bg-success-muted text-success;
+  }
+
+  .cq-queue-status[data-state="headToClinic"] {
+    @apply bg-warning-muted text-warning-foreground;
+  }
+
+  .cq-queue-status[data-state="yourTurn"] {
+    background: color-mix(in srgb, white 18%, transparent);
+    color: var(--primary-foreground);
+    animation: cq-your-turn-glow 1.6s ease-in-out infinite;
+  }
+
+  .cq-queue-status[data-state="paused"] {
+    @apply bg-warning-muted text-warning-foreground;
+  }
+
+  .cq-queue-status[data-state="pending"] {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .cq-type-badge {
+    @apply inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold tracking-wide;
+  }
+
+  .cq-type-badge[data-type="Normal"] {
+    background: color-mix(in srgb, var(--teal) 14%, var(--surface));
+    color: var(--info-foreground);
+  }
+
+  .cq-type-badge[data-type="Urgent"] {
+    background: color-mix(in srgb, var(--rose) 35%, var(--surface));
+    color: color-mix(in srgb, var(--danger) 70%, var(--primary));
+  }
+
+  .cq-queue-hero[data-state="yourTurn"] .cq-type-badge[data-type="Normal"] {
+    background: color-mix(in srgb, white 20%, transparent);
+    color: var(--primary-foreground);
+  }
+
+  .cq-queue-hero[data-state="yourTurn"] .cq-type-badge[data-type="Urgent"] {
+    background: color-mix(in srgb, var(--rose) 55%, transparent);
+    color: var(--primary-foreground);
+  }
+
+  .cq-queue-skeleton {
+    @apply animate-pulse rounded-2xl border border-border bg-surface p-6 sm:p-8;
+  }
+}
+
+@keyframes cq-live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes cq-your-turn-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, white 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, white 0%, transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -328,5 +508,9 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .cq-live-dot::after {
+    display: none;
   }
 }

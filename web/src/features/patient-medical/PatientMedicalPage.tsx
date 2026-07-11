@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
 
 import {
   getPatientProfile,
@@ -11,13 +12,10 @@ import {
   updatePatientProfile,
 } from "./api";
 
-type Props = {
-  clinicId: string;
-};
-
-export function PatientMedicalPage({ clinicId }: Props) {
+export function PatientMedicalPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
   const [actionError, setActionError] = useState<string | null>(null);
   const [bloodType, setBloodType] = useState("");
   const [chronicConditions, setChronicConditions] = useState("");

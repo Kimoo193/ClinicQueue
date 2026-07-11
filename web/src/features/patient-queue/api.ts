@@ -19,13 +19,15 @@ export type PatientAppointment = {
   temporaryNumber: number;
   realNumber?: number | null;
   countAhead?: number | null;
-  instruction?: "waitHome" | "headToClinic" | null;
+  instruction?: "waitHome" | "headToClinic" | "yourTurn" | null;
+  /** Present when API includes appointment type; defaults to Normal in UI. */
+  type?: string | null;
 };
 
 export type PositionUpdate = {
   appointmentId: string;
   countAhead: number;
-  instruction: "waitHome" | "headToClinic";
+  instruction: "waitHome" | "headToClinic" | "yourTurn";
 };
 
 export type PushSubscriptionPayload = {

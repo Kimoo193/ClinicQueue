@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
 import { DoctorConsolePage } from "@/features/doctor-console/DoctorConsolePage";
 
 import {
@@ -15,13 +16,10 @@ import {
   revokeReceptionist,
 } from "./api";
 
-type Props = {
-  clinicId: string;
-};
-
-export function OwnerReportsPage({ clinicId }: Props) {
+export function OwnerReportsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
   const [actionError, setActionError] = useState<string | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -260,7 +258,7 @@ export function OwnerReportsPage({ clinicId }: Props) {
         </section>
       </div>
 
-      <DoctorConsolePage clinicId={clinicId} readOnlyClinical />
+      <DoctorConsolePage readOnlyClinical />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useActiveClinic } from "@/features/auth/AuthProvider";
 
 import {
   createVisit,
@@ -16,17 +17,16 @@ import {
 } from "./api";
 
 type Props = {
-  clinicId: string;
   /** When true, clinical fields are view-only (ClinicOwner oversight). */
   readOnlyClinical?: boolean;
 };
 
 export function DoctorConsolePage({
-  clinicId,
   readOnlyClinical = false,
-}: Props) {
+}: Props = {}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { id: clinicId } = useActiveClinic();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pauseReason, setPauseReason] = useState("");
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<
