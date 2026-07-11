@@ -179,6 +179,7 @@ public sealed class CreateAppointmentHandler : ICreateAppointmentHandler
         // Snapshot peer instructions before insert so FR-071 can detect WaitHome → HeadToClinic
         // transitions caused by this booking (and notify the new booker when already in range).
         var previousInstructions = await _notificationRules.SnapshotBookedInstructionsAsync(
+            command.ClinicId,
             sessionId,
             headToClinicThreshold,
             cancellationToken);

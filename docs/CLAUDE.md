@@ -23,6 +23,7 @@ Read `specs/001-clinic-queue-mvp/spec.md` (what), `plan.md` (how), `tasks.md` (o
 6. **DTOs, not entities, at the API boundary.** Never bind request input directly to an EF entity (mass-assignment risk). Never return entities directly. Map through DTOs.
 7. **Medical data is least-privilege.** Diagnosis, notes, and prescriptions are visible to the treating Doctor/ClinicOwner only. Receptionists see booking-relevant fields only. Every medical-file read is audit-logged.
 8. **Migrations are never auto-applied on production.** Generate migrations; apply them as an explicit, reviewed step.
+9. **Background jobs run under BYPASSRLS — the database will NOT protect you.** Every job query and mutation on a tenant table MUST carry an explicit `ClinicId` predicate. Never rely on structural uniqueness (e.g. one `QueueSession` per clinic/day) for isolation. Enumerate clinics (or Distinct `ClinicId`) first, then process per clinic — see `BookingReminderJob`, `AutoAbsenceJob`, `OutboxDispatchJob`. Never add `ExecuteUpdateAsync` / `ExecuteDeleteAsync` on tenant tables without a `ClinicId` filter in the same expression.
 
 ---
 

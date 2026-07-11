@@ -9,6 +9,11 @@ namespace ClinicQueue.Infrastructure.Jobs;
 /// <summary>
 /// Marks Inside patients Absent after the clinic's auto-absence window and advances
 /// the queue via head-to-clinic outbox transitions (FR-029).
+/// <para>
+/// Runs under BYPASSRLS (see <see cref="PrivilegedJobActivator"/>). Isolation is therefore
+/// by explicit <c>ClinicId</c> predicates on every read/write — never by assuming
+/// <c>QueueSessionId</c> uniqueness alone.
+/// </para>
 /// </summary>
 public sealed class AutoAbsenceJob
 {
@@ -26,20 +31,67 @@ public sealed class AutoAbsenceJob
         _logger = logger;
     }
 
-    public async Task ProcessAsync(CancellationToken cancellationToken = default)
+    /// <param name="utcNow">Overrides the current instant for deterministic testing.</param>
+    public async Task ProcessAsync(CancellationToken cancellationToken = default, DateTime? utcNow = null)
     {
-        var now = DateTime.UtcNow;
+        var now = utcNow ?? DateTime.UtcNow;
 
-        var candidates = await (
-            from a in _db.Appointments
-            join c in _db.Clinics on a.ClinicId equals c.Id
-            where a.Status == AppointmentStatus.Inside
-                  && a.CalledAt != null
-            select new { Appointment = a, c.AutoAbsenceTimeoutMinutes, c.HeadToClinicThreshold }
-        ).ToListAsync(cancellationToken);
+        // Enumerate clinics first (same shape as BookingReminderJob): every subsequent query
+        // is scoped to one ClinicId so a bulk mutation cannot span tenants.
+        var clinics = await _db.Clinics.AsNoTracking()
+            .Select(c => new { c.Id, c.AutoAbsenceTimeoutMinutes, c.HeadToClinicThreshold })
+            .ToListAsync(cancellationToken);
+
+        foreach (var clinic in clinics)
+        {
+            await ProcessClinicAsync(
+                clinic.Id,
+                clinic.AutoAbsenceTimeoutMinutes,
+                clinic.HeadToClinicThreshold,
+                now,
+                cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Processes auto-absence for a single clinic. Public so isolation tests can invoke
+    /// clinic A's path while clinic B is also due — proving mutations stay ClinicId-scoped.
+    /// </summary>
+    public async Task ProcessClinicAsync(
+        Guid clinicId,
+        CancellationToken cancellationToken = default,
+        DateTime? utcNow = null)
+    {
+        var now = utcNow ?? DateTime.UtcNow;
+        var clinic = await _db.Clinics.AsNoTracking()
+            .Where(c => c.Id == clinicId)
+            .Select(c => new { c.AutoAbsenceTimeoutMinutes, c.HeadToClinicThreshold })
+            .SingleAsync(cancellationToken);
+
+        await ProcessClinicAsync(
+            clinicId,
+            clinic.AutoAbsenceTimeoutMinutes,
+            clinic.HeadToClinicThreshold,
+            now,
+            cancellationToken);
+    }
+
+    private async Task ProcessClinicAsync(
+        Guid clinicId,
+        int autoAbsenceTimeoutMinutes,
+        int headToClinicThreshold,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        // Explicit ClinicId on the read — do not load Inside appointments globally.
+        var candidates = await _db.Appointments
+            .Where(a => a.ClinicId == clinicId
+                        && a.Status == AppointmentStatus.Inside
+                        && a.CalledAt != null)
+            .ToListAsync(cancellationToken);
 
         var due = candidates
-            .Where(x => x.Appointment.CalledAt!.Value.AddMinutes(x.AutoAbsenceTimeoutMinutes) <= now)
+            .Where(a => a.CalledAt!.Value.AddMinutes(autoAbsenceTimeoutMinutes) <= utcNow)
             .ToList();
 
         if (due.Count == 0)
@@ -47,29 +99,40 @@ public sealed class AutoAbsenceJob
             return;
         }
 
-        foreach (var group in due.GroupBy(x => x.Appointment.QueueSessionId))
+        foreach (var sessionGroup in due.GroupBy(a => a.QueueSessionId))
         {
-            var first = group.First();
+            var queueSessionId = sessionGroup.Key;
+
+            // Re-assert tenant on every session batch (session ids are not a substitute for ClinicId).
+            if (sessionGroup.Any(a => a.ClinicId != clinicId))
+            {
+                throw new InvalidOperationException(
+                    $"AutoAbsenceJob refused a cross-clinic session batch for clinic {clinicId}.");
+            }
+
             var previous = await _notificationRules.SnapshotBookedInstructionsAsync(
-                group.Key,
-                first.HeadToClinicThreshold,
+                clinicId,
+                queueSessionId,
+                headToClinicThreshold,
                 cancellationToken);
 
-            foreach (var item in group)
+            foreach (var appointment in sessionGroup)
             {
-                item.Appointment.Status = AppointmentStatus.Absent;
+                // Tracked entities were loaded with ClinicId == clinicId; mutate only those rows.
+                appointment.Status = AppointmentStatus.Absent;
                 _logger.LogInformation(
-                    "Auto-absence marked appointment {AppointmentId} absent after {Minutes}m",
-                    item.Appointment.Id,
-                    item.AutoAbsenceTimeoutMinutes);
+                    "Auto-absence marked appointment {AppointmentId} absent for clinic {ClinicId} after {Minutes}m",
+                    appointment.Id,
+                    clinicId,
+                    autoAbsenceTimeoutMinutes);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
 
             await _notificationRules.EnqueueHeadToClinicTransitionsAsync(
-                first.Appointment.ClinicId,
-                group.Key,
-                first.HeadToClinicThreshold,
+                clinicId,
+                queueSessionId,
+                headToClinicThreshold,
                 previous,
                 cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
