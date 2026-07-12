@@ -25,7 +25,6 @@ public sealed record DependentBookingCommand(
     Guid DependentId,
     DateOnly Day,
     AppointmentMethod Method,
-    int CompanionsCount,
     bool PossibleUrgentFlag);
 
 public sealed record DependentDto(
@@ -153,7 +152,6 @@ public sealed class DependentBookingHandler : IDependentBookingHandler
                 command.GuardianUserId,
                 command.Day,
                 command.Method,
-                command.CompanionsCount,
                 command.PossibleUrgentFlag,
                 command.DependentId),
             cancellationToken);

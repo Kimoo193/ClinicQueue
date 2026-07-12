@@ -85,7 +85,6 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
             user.Id,
             day,
             AppointmentMethod.WalkIn,
-            CompanionsCount: 1,
             PossibleUrgentFlag: false,
             DependentId: null));
 
@@ -419,7 +418,6 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
             user.Id,
             ClinicToday(),
             AppointmentMethod.WalkIn,
-            CompanionsCount: 0,
             PossibleUrgentFlag: false,
             DependentId: null));
 

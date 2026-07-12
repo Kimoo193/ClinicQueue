@@ -1,0 +1,27 @@
+- main [ref=e3]:
+  - link "Skip to content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - link "ClinicQueue" [ref=e8] [cursor=pointer]:
+          - /url: /
+        - paragraph [ref=e9]: Smart clinic queue management
+      - button "Switch language" [ref=e10]: العربية
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - paragraph [ref=e13]: ClinicQueue
+        - heading "Sign in" [level=1] [ref=e14]
+        - paragraph [ref=e15]: Use your email or phone and password.
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: Email or phone
+          - textbox "Email or phone" [ref=e19]
+        - generic [ref=e20]:
+          - generic [ref=e21]: Password
+          - textbox "Password" [ref=e22]
+        - button "Sign in" [ref=e23]
+      - paragraph [ref=e24]:
+        - text: No account yet?
+        - link "Register" [ref=e25] [cursor=pointer]:
+          - /url: /register

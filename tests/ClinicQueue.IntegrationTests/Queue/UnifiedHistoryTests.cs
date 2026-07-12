@@ -218,7 +218,6 @@ public sealed class UnifiedHistoryTests(Infrastructure.PostgresFixture fixture)
                 registered.DependentId,
                 day,
                 AppointmentMethod.WalkIn,
-                CompanionsCount: 0,
                 PossibleUrgentFlag: false));
 
         var appt = await db.Appointments.SingleAsync(a => a.Id == dependentBooking.AppointmentId);

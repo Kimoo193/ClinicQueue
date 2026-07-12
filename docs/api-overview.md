@@ -32,7 +32,9 @@ OpenAPI document + Scalar UI: Development, or Production when `OpenApi:EnableUi=
 | POST | `/auth/switch-clinic` | Authenticated (re-issues a token scoped to another clinic the user is a member of) |
 | POST | `/auth/logout` | Authenticated |
 | POST | `/clinics` | Anonymous (creates clinic + admin) |
+| GET | `/clinics/{clinicId}/branding` | ClinicOwner |
 | PATCH | `/clinics/{clinicId}/branding` | ClinicOwner |
+| GET | `/clinics/{clinicId}/settings` | ClinicOwner |
 | PATCH | `/clinics/{clinicId}/settings` | ClinicOwner |
 | GET | `/clinics/{clinicId}/qr-code` | ClinicOwner |
 | GET | `/patients/me/clinics` | Patient |

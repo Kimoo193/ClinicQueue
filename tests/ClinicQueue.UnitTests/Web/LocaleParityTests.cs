@@ -18,9 +18,31 @@ public sealed class LocaleParityTests
         var arKeys = Flatten(arDoc.RootElement).ToDictionary(x => x.Key, x => x.Value);
         var enKeys = Flatten(enDoc.RootElement).ToDictionary(x => x.Key, x => x.Value);
 
-        arKeys.Keys.Should().BeEquivalentTo(enKeys.Keys);
+        // Compare base keys (plural category suffixes stripped): Arabic's CLDR plural
+        // set (zero/one/two/few/many/other) is legitimately larger than English's
+        // (one/other), so an exact key-count match would be a false failure.
+        var arBaseKeys = arKeys.Keys.Select(StripPluralSuffix).Distinct();
+        var enBaseKeys = enKeys.Keys.Select(StripPluralSuffix).Distinct();
+
+        arBaseKeys.Should().BeEquivalentTo(enBaseKeys);
         arKeys.Values.Should().OnlyContain(v => !string.IsNullOrWhiteSpace(v));
         enKeys.Values.Should().OnlyContain(v => !string.IsNullOrWhiteSpace(v));
+    }
+
+    private static readonly string[] PluralSuffixes =
+        { "_zero", "_one", "_two", "_few", "_many", "_other" };
+
+    private static string StripPluralSuffix(string key)
+    {
+        foreach (var suffix in PluralSuffixes)
+        {
+            if (key.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                return key[..^suffix.Length];
+            }
+        }
+
+        return key;
     }
 
     [Fact]

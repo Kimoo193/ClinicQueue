@@ -20,11 +20,11 @@ export type TodaySession = {
   pausedAt?: string | null;
 };
 
-export type ReceptionAppointment = {
+export type DoctorAppointment = {
   appointmentId: string;
   patientMembershipId?: string | null;
   bookedByUserId: string;
-  type: string;
+  type: "Normal" | "Urgent" | string;
   method: string;
   status: string;
   temporaryNumber: number;
@@ -32,6 +32,10 @@ export type ReceptionAppointment = {
   isInstantEntry: boolean;
   possibleUrgentFlag: boolean;
   companionsCount: number;
+  repeatedAbsenceFlag?: boolean;
+  absenceCount?: number;
+  membershipStatus?: string | null;
+  depositConfirmed?: boolean;
 };
 
 function csrfToken(): string | undefined {
@@ -74,14 +78,28 @@ export async function getTodaySession(): Promise<TodaySession | null> {
   return (await response.json()) as TodaySession | null;
 }
 
-export async function listTodayAppointments(): Promise<ReceptionAppointment[]> {
+export async function listTodayAppointments(): Promise<DoctorAppointment[]> {
   const response = await fetch("/api/v1/appointments/today", {
     credentials: "include",
   });
   if (!response.ok) {
     throw new Error(await parseError(response));
   }
-  return (await response.json()) as ReceptionAppointment[];
+  return (await response.json()) as DoctorAppointment[];
+}
+
+export async function callNext(appointmentId: string): Promise<void> {
+  const response = await fetch(
+    `/api/v1/appointments/${appointmentId}/call-next`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: jsonHeaders(),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
 }
 
 export async function pauseSession(

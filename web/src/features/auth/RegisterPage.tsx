@@ -45,6 +45,7 @@ export function RegisterPage() {
   return (
     <section className="cq-page mx-auto max-w-md">
       <header className="cq-page-header">
+        <p className="cq-brand-mark">{t("app.name")}</p>
         <h1 className="cq-page-title">{t("auth.registerTitle")}</h1>
         <p className="cq-page-subtitle">{t("auth.registerSubtitle")}</p>
       </header>
@@ -73,6 +74,7 @@ export function RegisterPage() {
             required
           />
         </label>
+        <p className="text-xs text-muted-foreground">{t("auth.passwordHint")}</p>
 
         {error ? (
           <p className="cq-alert" role="alert">
@@ -80,7 +82,7 @@ export function RegisterPage() {
           </p>
         ) : null}
 
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="w-full">
           {pending ? t("auth.registering") : t("auth.register")}
         </Button>
       </form>

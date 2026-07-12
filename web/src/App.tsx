@@ -7,6 +7,7 @@ import { RegisterPage } from "@/features/auth/RegisterPage";
 import { AdminConsolePage } from "@/features/admin-console/AdminConsolePage";
 import { DoctorConsolePage } from "@/features/doctor-console/DoctorConsolePage";
 import { OwnerReportsPage } from "@/features/owner-reports/OwnerReportsPage";
+import { OwnerSettingsPage } from "@/features/owner-settings/OwnerSettingsPage";
 import { PatientBookingsPage } from "@/features/patient-bookings/PatientBookingsPage";
 import { PatientMedicalPage } from "@/features/patient-medical/PatientMedicalPage";
 import { PatientQueuePage } from "@/features/patient-queue/PatientQueuePage";
@@ -19,6 +20,7 @@ import { PatientLayout } from "@/layouts/PatientLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { RequireRole } from "@/layouts/RequireRole";
 import { StaffLayout } from "@/layouts/StaffLayout";
+import { ChooseClinicPage } from "@/pages/ChooseClinicPage";
 import { ClinicEntryPage } from "@/pages/ClinicEntryPage";
 import { FindClinicPage } from "@/pages/FindClinicPage";
 import { ForbiddenPage } from "@/pages/ForbiddenPage";
@@ -41,6 +43,7 @@ function AppRoutes() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="find-clinic" element={<FindClinicPage />} />
+        <Route path="choose-clinic" element={<ChooseClinicPage />} />
         <Route path="r/:clinicSlug" element={<ClinicEntryPage />} />
       </Route>
 
@@ -49,6 +52,7 @@ function AppRoutes() {
       ) : null}
 
       <Route path="app" element={<PatientLayout />}>
+        <Route index element={<Navigate to="queue" replace />} />
         <Route path="queue" element={<PatientQueuePage />} />
         <Route path="bookings" element={<PatientBookingsPage />} />
         <Route path="medical" element={<PatientMedicalPage />} />
@@ -69,7 +73,9 @@ function AppRoutes() {
 
       <Route path="owner" element={<StaffLayout />}>
         <Route element={<RequireRole roles={["ClinicOwner"]} />}>
+          <Route index element={<Navigate to="reports" replace />} />
           <Route path="reports" element={<OwnerReportsPage />} />
+          <Route path="settings" element={<OwnerSettingsPage />} />
         </Route>
       </Route>
 

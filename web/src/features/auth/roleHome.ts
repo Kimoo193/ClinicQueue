@@ -36,7 +36,8 @@ export function clinicName(
   const match = memberships.find(
     (m) => m.clinicId.toLowerCase() === clinicId.toLowerCase(),
   );
-  return match?.clinicName ?? clinicId;
+  // Never fall back to a raw clinic UUID in the UI.
+  return match?.clinicName ?? "";
 }
 
 export function distinctClinicIds(
@@ -78,7 +79,10 @@ export function navItemsForRoles(roles: readonly string[]): NavItem[] {
     items.push({ to: "/doctor", labelKey: "nav.doctor" });
   }
   if (roles.includes("ClinicOwner")) {
-    items.push({ to: "/owner/reports", labelKey: "nav.owner" });
+    items.push(
+      { to: "/owner/reports", labelKey: "nav.owner" },
+      { to: "/owner/settings", labelKey: "nav.ownerSettings" },
+    );
   }
   if (roles.includes("SuperAdmin")) {
     items.push({ to: "/admin", labelKey: "nav.admin" });

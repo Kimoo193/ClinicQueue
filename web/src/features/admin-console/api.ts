@@ -5,6 +5,15 @@ export type AdminClinic = {
   subscriptionStatus?: string | null;
   planName?: string | null;
   renewalDate?: string | null;
+  /** Present when API includes it; never display clinicId to operators. */
+  subdomainSlug?: string | null;
+  qrCodeUrl?: string | null;
+};
+
+export type ClinicQrCode = {
+  clinicId: string;
+  subdomainSlug: string;
+  qrCodeUrl?: string | null;
 };
 
 export type AdminClinicListResponse = {
@@ -196,4 +205,17 @@ export async function getClinicExport(
     throw new Error(await parseError(response));
   }
   return (await response.json()) as ClinicExportPayload;
+}
+
+/** ClinicOwner/SuperAdmin QR endpoint — may 403 when JWT clinic does not match. */
+export async function getClinicQrCode(
+  clinicId: string,
+): Promise<ClinicQrCode> {
+  const response = await fetch(`/api/v1/clinics/${clinicId}/qr-code`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return (await response.json()) as ClinicQrCode;
 }

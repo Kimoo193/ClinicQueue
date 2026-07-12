@@ -14,6 +14,14 @@ export type ReceptionAppointment = {
   absenceCount?: number;
   membershipStatus?: string | null;
   depositConfirmed?: boolean;
+  patientLabel?: string | null;
+};
+
+export type TodaySession = {
+  queueSessionId: string;
+  status: string;
+  pauseReason?: string | null;
+  pausedAt?: string | null;
 };
 
 export type ConfirmArrivalResponse = {
@@ -176,4 +184,63 @@ export async function restrictBooking(
     throw new Error(await parseError(response));
   }
   return (await response.json()) as { membershipId: string; status: string };
+}
+
+export async function getTodaySession(): Promise<TodaySession | null> {
+  const response = await fetch("/api/v1/queue-sessions/today", {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return (await response.json()) as TodaySession | null;
+}
+
+export async function pauseSession(
+  sessionId: string,
+  reason: string,
+): Promise<{ queueSessionId: string; status: string; pausedAt: string }> {
+  const response = await fetch(`/api/v1/queue-sessions/${sessionId}/pause`, {
+    method: "POST",
+    credentials: "include",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ reason }),
+  });
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return (await response.json()) as {
+    queueSessionId: string;
+    status: string;
+    pausedAt: string;
+  };
+}
+
+export async function resumeSession(
+  sessionId: string,
+): Promise<{ queueSessionId: string; status: string }> {
+  const response = await fetch(`/api/v1/queue-sessions/${sessionId}/resume`, {
+    method: "POST",
+    credentials: "include",
+    headers: jsonHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+  return (await response.json()) as { queueSessionId: string; status: string };
+}
+
+/** Manual absence for a called (Inside) patient — advances the queue. */
+export async function markAbsent(appointmentId: string): Promise<void> {
+  const response = await fetch(
+    `/api/v1/appointments/${appointmentId}/mark-absent`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: jsonHeaders(),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
 }

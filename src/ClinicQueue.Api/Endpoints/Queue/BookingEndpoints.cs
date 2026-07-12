@@ -100,7 +100,6 @@ public static class BookingEndpoints
                         dependentId,
                         request.Day,
                         method,
-                        request.CompanionsCount,
                         request.PossibleUrgentFlag),
                     cancellationToken);
             }
@@ -112,7 +111,6 @@ public static class BookingEndpoints
                         userId.Value,
                         request.Day,
                         method,
-                        request.CompanionsCount,
                         request.PossibleUrgentFlag,
                         DependentId: null),
                     cancellationToken);
@@ -254,8 +252,7 @@ public static class BookingEndpoints
                     request.PatientRef,
                     request.Day,
                     type,
-                    method,
-                    request.CompanionsCount),
+                    method),
                 cancellationToken);
 
             try

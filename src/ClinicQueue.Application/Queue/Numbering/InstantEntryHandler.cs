@@ -155,8 +155,7 @@ public sealed class InstantEntryHandler : IInstantEntryHandler
             RealNumber = decision.RealNumber,
             Status = AppointmentStatus.Present,
             IsInstantEntry = true,
-            InstantEntryReason = command.Reason.Trim(),
-            CompanionsCount = 0
+            InstantEntryReason = command.Reason.Trim()
         };
 
         _db.Appointments.Add(appointment);

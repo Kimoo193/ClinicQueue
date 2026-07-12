@@ -669,9 +669,6 @@ namespace ClinicQueue.Infrastructure.Migrations
                     b.Property<Guid>("ClinicId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("CompanionsCount")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 

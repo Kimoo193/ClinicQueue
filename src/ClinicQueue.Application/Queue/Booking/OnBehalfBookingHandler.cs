@@ -11,8 +11,7 @@ public sealed record OnBehalfBookingCommand(
     Guid PatientMembershipId,
     DateOnly Day,
     AppointmentType Type,
-    AppointmentMethod Method,
-    int CompanionsCount);
+    AppointmentMethod Method);
 
 public interface IOnBehalfBookingHandler
 {
@@ -58,7 +57,6 @@ public sealed class OnBehalfBookingHandler : IOnBehalfBookingHandler
                 membership.UserId,
                 command.Day,
                 command.Method,
-                command.CompanionsCount,
                 PossibleUrgentFlag: false,
                 DependentId: null),
             cancellationToken);

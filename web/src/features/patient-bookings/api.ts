@@ -1,11 +1,3 @@
-export type ClinicSearchResult = {
-  clinicId: string;
-  name: string;
-  specialty: string;
-  aggregateRating?: number | null;
-  location?: string | null;
-};
-
 export type PatientAppointment = {
   appointmentId: string;
   clinicId: string;
@@ -15,6 +7,12 @@ export type PatientAppointment = {
   countAhead?: number | null;
   instruction?: "waitHome" | "headToClinic" | null;
   dependentId?: string | null;
+  /** Optional when API includes it; presentation maps when present. */
+  type?: string | null;
+  /** Operating day (ISO date) when API includes it. */
+  day?: string | null;
+  clinicName?: string | null;
+  clinicSlug?: string | null;
 };
 
 export type Dependent = {
@@ -55,25 +53,6 @@ async function parseError(response: Response): Promise<string> {
   } catch {
     return response.statusText;
   }
-}
-
-export async function searchClinics(params: {
-  specialty?: string;
-  name?: string;
-  location?: string;
-}): Promise<ClinicSearchResult[]> {
-  const query = new URLSearchParams();
-  if (params.specialty) query.set("specialty", params.specialty);
-  if (params.name) query.set("name", params.name);
-  if (params.location) query.set("location", params.location);
-
-  const response = await fetch(`/api/v1/clinics/search?${query.toString()}`, {
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-  return (await response.json()) as ClinicSearchResult[];
 }
 
 export async function listMyAppointments(
@@ -150,6 +129,7 @@ export async function createAppointment(payload: {
   companionsCount: number;
   possibleUrgentFlag?: boolean;
   dependentId?: string;
+  depositProofUrl?: string | null;
 }): Promise<{ appointmentId: string; temporaryNumber: number }> {
   const response = await fetch("/api/v1/appointments", {
     method: "POST",

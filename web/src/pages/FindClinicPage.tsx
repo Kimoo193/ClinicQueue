@@ -42,9 +42,14 @@ export function FindClinicPage() {
   return (
     <section className="cq-page mx-auto max-w-md">
       <header className="cq-page-header">
+        <p className="cq-brand-mark">{t("app.name")}</p>
         <h1 className="cq-page-title">{t("auth.findClinicTitle")}</h1>
         <p className="cq-page-subtitle">{t("auth.findClinicSubtitle")}</p>
       </header>
+
+      <div className="cq-callout-info mb-6" role="note">
+        {t("auth.findClinicHelp")}
+      </div>
 
       <form onSubmit={onSubmit} className="cq-section gap-4">
         <label className="cq-label">
@@ -66,7 +71,9 @@ export function FindClinicPage() {
           </p>
         ) : null}
 
-        <Button type="submit">{t("auth.findClinicContinue")}</Button>
+        <Button type="submit" className="w-full">
+          {t("auth.findClinicContinue")}
+        </Button>
       </form>
 
       <div className="cq-section mt-6 gap-2">
@@ -74,20 +81,24 @@ export function FindClinicPage() {
         <p className="text-sm text-muted-foreground">
           {t("auth.findClinicQrGuidance")}
         </p>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
+          <li>{t("auth.findClinicStep1")}</li>
+          <li>{t("auth.findClinicStep2")}</li>
+          <li>{t("auth.findClinicStep3")}</li>
+        </ol>
       </div>
 
-      <p className="mt-6 text-sm text-muted-foreground">
-        <Button type="button" variant="ghost" onClick={() => void logout()}>
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" onClick={() => void logout()}>
           {t("auth.logout")}
         </Button>
-        {" · "}
         <Link
           to="/"
-          className="text-primary underline-offset-2 hover:underline"
+          className="text-sm text-primary underline-offset-2 hover:underline"
         >
           {t("auth.backHome")}
         </Link>
-      </p>
+      </div>
     </section>
   );
 }

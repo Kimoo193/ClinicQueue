@@ -30,8 +30,6 @@ public class Appointment : ClinicScopedEntity
     /// <summary>Assigned only on arrival confirmation (FR-022); null until then.</summary>
     public int? RealNumber { get; set; }
 
-    public int CompanionsCount { get; set; }
-
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Booked;
 
     public bool IsInstantEntry { get; set; }

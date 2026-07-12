@@ -57,6 +57,15 @@ const STATES: Array<{
     kind: "real",
     type: "Normal",
   },
+  {
+    id: "pending",
+    state: "pending",
+    countAhead: null,
+    number: 91,
+    kind: "temporary",
+    type: "Normal",
+    live: false,
+  },
 ];
 
 function toModel(

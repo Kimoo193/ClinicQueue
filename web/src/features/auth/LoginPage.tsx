@@ -1,16 +1,17 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 
 import { useAuth } from "./AuthProvider";
+import { distinctClinicIds } from "./roleHome";
 
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, memberships, switchClinic, activeClinic, user } = useAuth();
+  const { login, memberships, activeClinic, user } = useAuth();
 
   const preselectedClinicId = searchParams.get("clinicId") ?? undefined;
   const returnTo = searchParams.get("returnTo") ?? undefined;
@@ -19,7 +20,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [needsClinicPick, setNeedsClinicPick] = useState(false);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -28,7 +28,10 @@ export function LoginPage() {
     try {
       const result = await login(emailOrPhone, password, preselectedClinicId);
       if (result.kind === "choose-clinic") {
-        setNeedsClinicPick(true);
+        const q = returnTo
+          ? `?returnTo=${encodeURIComponent(returnTo)}`
+          : "";
+        navigate(`/choose-clinic${q}`, { replace: true });
         return;
       }
       if (result.kind === "find-clinic") {
@@ -43,56 +46,16 @@ export function LoginPage() {
     }
   };
 
-  const onPickClinic = async (clinicId: string) => {
-    setError(null);
-    setPending(true);
-    try {
-      const homePath = await switchClinic(clinicId);
-      navigate(returnTo ?? homePath, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("auth.switchFailed"));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const uniqueClinics = Array.from(
-    new Map(memberships.map((m) => [m.clinicId.toLowerCase(), m])).values(),
-  );
-
-  if (needsClinicPick || (user && !activeClinic && uniqueClinics.length > 1)) {
-    return (
-      <section className="cq-page mx-auto max-w-md">
-        <header className="cq-page-header">
-          <h1 className="cq-page-title">{t("auth.chooseClinicTitle")}</h1>
-          <p className="cq-page-subtitle">{t("auth.chooseClinicSubtitle")}</p>
-        </header>
-        {error ? (
-          <p className="cq-alert" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <ul className="flex flex-col gap-2">
-          {uniqueClinics.map((clinic) => (
-            <li key={clinic.clinicId}>
-              <Button
-                type="button"
-                className="w-full justify-start"
-                disabled={pending}
-                onClick={() => void onPickClinic(clinic.clinicId)}
-              >
-                {clinic.clinicName}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    );
+  // Logged in without an active clinic and multiple clinics → dedicated picker.
+  if (user && !activeClinic && distinctClinicIds(memberships).length > 1) {
+    const q = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : "";
+    return <Navigate to={`/choose-clinic${q}`} replace />;
   }
 
   return (
     <section className="cq-page mx-auto max-w-md">
       <header className="cq-page-header">
+        <p className="cq-brand-mark">{t("app.name")}</p>
         <h1 className="cq-page-title">{t("auth.loginTitle")}</h1>
         <p className="cq-page-subtitle">{t("auth.loginSubtitle")}</p>
       </header>
@@ -127,7 +90,7 @@ export function LoginPage() {
           </p>
         ) : null}
 
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="w-full">
           {pending ? t("auth.loggingIn") : t("auth.login")}
         </Button>
       </form>

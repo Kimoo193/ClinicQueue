@@ -37,7 +37,6 @@ public sealed record ExportedAppointmentDto(
     string Status,
     int TemporaryNumber,
     int? RealNumber,
-    int CompanionsCount,
     DateTime? DepositConfirmedAt,
     DateTime CreatedAt);
 
@@ -175,7 +174,6 @@ public sealed class ClinicExportHandler : IClinicExportHandler
                 a.Status.ToString(),
                 a.TemporaryNumber,
                 a.RealNumber,
-                a.CompanionsCount,
                 a.DepositConfirmedAt,
                 a.CreatedAt))
             .ToListAsync(cancellationToken);

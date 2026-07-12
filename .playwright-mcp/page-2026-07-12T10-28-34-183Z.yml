@@ -1,0 +1,43 @@
+- main [ref=e582]:
+  - link "Skip to content" [ref=e583] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e584]:
+    - generic [ref=e585]:
+      - generic [ref=e586]:
+        - link "ClinicQueue" [ref=e587] [cursor=pointer]:
+          - /url: /
+        - paragraph [ref=e588]: "Clinic: عيادة د. غادة كامل / Dr. Ghada Kamel Clinic"
+      - generic [ref=e589]:
+        - button "Switch language" [ref=e590]: العربية
+        - button "Sign out" [ref=e591]
+      - navigation "Primary" [ref=e592]:
+        - link "Patient" [ref=e593] [cursor=pointer]:
+          - /url: /app/queue
+        - link "My bookings" [ref=e594] [cursor=pointer]:
+          - /url: /app/bookings
+        - link "Medical" [ref=e595] [cursor=pointer]:
+          - /url: /app/medical
+    - generic [ref=e596]:
+      - generic [ref=e597]:
+        - heading "Your place in line" [level=1] [ref=e598]
+        - paragraph [ref=e599]: Your queue number updates live. We show how many patients are ahead — never a time estimate.
+      - article [ref=e601]:
+        - generic [ref=e602]:
+          - generic "Live" [ref=e603]
+          - generic [ref=e605]: Normal
+        - generic [ref=e606]:
+          - paragraph [ref=e607]: Your queue number
+          - paragraph [ref=e608]: "6"
+        - status [ref=e609]:
+          - paragraph [ref=e610]: It's your turn
+          - paragraph [ref=e611]: Please go to the reception desk now.
+      - generic [ref=e612]:
+        - heading "Book a new visit" [level=2] [ref=e613]
+        - generic [ref=e614]:
+          - generic [ref=e615]: Companions
+          - spinbutton "Companions How many people are coming with you (0–20)." [ref=e616]: "0"
+          - generic [ref=e617]: How many people are coming with you (0–20).
+        - generic [ref=e618]:
+          - checkbox "I may need urgent care (advisory)" [ref=e619]
+          - generic [ref=e620]: I may need urgent care (advisory)
+        - button "Book appointment" [ref=e621]

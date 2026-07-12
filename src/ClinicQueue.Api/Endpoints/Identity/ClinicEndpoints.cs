@@ -31,9 +31,17 @@ public static class ClinicEndpoints
             .WithName("GetClinicBySlug")
             .WithSummary("Resolve a clinic's public branding profile by subdomain slug");
 
+        group.MapGet("/clinics/{clinicId:guid}/branding", GetBrandingAsync)
+            .RequireAuthorization(Policies.ClinicOwner)
+            .WithName("GetClinicBranding");
+
         group.MapPatch("/clinics/{clinicId:guid}/branding", UpdateBrandingAsync)
             .RequireAuthorization(Policies.ClinicOwner)
             .WithName("UpdateClinicBranding");
+
+        group.MapGet("/clinics/{clinicId:guid}/settings", GetSettingsAsync)
+            .RequireAuthorization(Policies.ClinicOwner)
+            .WithName("GetClinicSettings");
 
         group.MapPatch("/clinics/{clinicId:guid}/settings", UpdateSettingsAsync)
             .RequireAuthorization(Policies.ClinicOwner)
@@ -159,6 +167,32 @@ public static class ClinicEndpoints
             new CreateClinicResponse(clinic.Id, clinic.SubdomainSlug, clinic.QrCodeUrl));
     }
 
+    private static async Task<IResult> GetBrandingAsync(
+        Guid clinicId,
+        HttpContext httpContext,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var tenantCheck = EnsureJwtClinic(httpContext, clinicId);
+        if (tenantCheck is not null)
+        {
+            return tenantCheck;
+        }
+
+        var clinic = await db.Clinics.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken);
+        if (clinic is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(new
+        {
+            clinicId,
+            branding = new { clinic.LogoUrl, clinic.PrimaryColor, clinic.SecondaryColor }
+        });
+    }
+
     private static async Task<IResult> UpdateBrandingAsync(
         Guid clinicId,
         UpdateBrandingRequest request,
@@ -203,6 +237,42 @@ public static class ClinicEndpoints
         {
             clinicId,
             branding = new { clinic.LogoUrl, clinic.PrimaryColor, clinic.SecondaryColor }
+        });
+    }
+
+    private static async Task<IResult> GetSettingsAsync(
+        Guid clinicId,
+        HttpContext httpContext,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var tenantCheck = EnsureJwtClinic(httpContext, clinicId);
+        if (tenantCheck is not null)
+        {
+            return tenantCheck;
+        }
+
+        var clinic = await db.Clinics.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken);
+        if (clinic is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(new
+        {
+            clinicId,
+            name = clinic.Name,
+            subdomainSlug = clinic.SubdomainSlug,
+            settings = new
+            {
+                clinic.UrgentRatio,
+                clinic.HeadToClinicThreshold,
+                clinic.AutoAbsenceTimeoutMinutes,
+                clinic.RepeatedAbsenceThreshold,
+                clinic.WorkingHoursJson,
+                clinic.Timezone
+            }
         });
     }
 

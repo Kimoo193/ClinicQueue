@@ -14,7 +14,7 @@ void i18n
       en: { translation: en },
     },
     fallbackLng: "ar",
-    lng: "ar",
+    // Do not set `lng` here — LanguageDetector + localStorage must win (E2E / user preference).
     interpolation: {
       escapeValue: false,
     },

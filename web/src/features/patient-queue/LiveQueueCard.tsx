@@ -30,6 +30,7 @@ const STATUS_DETAIL_I18N: Partial<Record<QueueVisualState, string>> = {
 
 export function LiveQueueCard({ model, className }: LiveQueueCardProps) {
   const { t } = useTranslation();
+  const isYourTurn = model.visualState === "yourTurn";
   const showCount =
     model.countAhead !== null &&
     model.visualState !== "yourTurn" &&
@@ -45,24 +46,24 @@ export function LiveQueueCard({ model, className }: LiveQueueCardProps) {
       className={cn("cq-queue-hero", className)}
       data-state={model.visualState}
       aria-labelledby={`queue-number-${model.appointmentId}`}
-      aria-live="polite"
+      aria-live={isYourTurn ? "assertive" : "polite"}
       aria-atomic="true"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LiveIndicator
           isLive={model.isLive}
-          inverted={model.visualState === "yourTurn"}
+          inverted={isYourTurn}
           liveLabel={t("patientQueue.live")}
           offlineLabel={t("patientQueue.offline")}
         />
         <TypeBadge type={model.appointmentType} />
       </div>
 
-      <div className="mt-6 flex flex-col items-center text-center">
+      <div className="mt-8 flex flex-col items-center text-center sm:mt-10">
         <p
           className={cn(
             "text-sm font-medium tracking-wide",
-            model.visualState === "yourTurn"
+            isYourTurn
               ? "text-primary-foreground/80"
               : "text-muted-foreground",
           )}
@@ -71,7 +72,7 @@ export function LiveQueueCard({ model, className }: LiveQueueCardProps) {
         </p>
         <p
           id={`queue-number-${model.appointmentId}`}
-          className="cq-queue-number mt-1"
+          className="cq-queue-number mt-2"
           aria-label={t("patientQueue.numberAria", {
             number: model.displayNumber,
             kind: numberLabel,
@@ -81,16 +82,34 @@ export function LiveQueueCard({ model, className }: LiveQueueCardProps) {
         </p>
 
         {showCount ? (
-          <p
-            className={cn(
-              "mt-4 text-lg font-semibold tabular-nums sm:text-xl",
-              model.visualState === "yourTurn"
-                ? "text-primary-foreground"
-                : "text-foreground",
-            )}
+          <div
+            className="mt-6 flex flex-col items-center gap-1"
+            aria-label={t("patientQueue.countAhead", {
+              count: model.countAhead,
+            })}
           >
-            {t("patientQueue.countAhead", { count: model.countAhead })}
-          </p>
+            <span
+              className={cn(
+                "cq-count-ahead",
+                model.visualState === "paused" && "text-warning-foreground",
+                model.visualState === "headToClinic" && "text-warning-foreground",
+              )}
+              aria-hidden
+            >
+              {model.countAhead}
+            </span>
+            <span
+              className={cn(
+                "text-sm font-medium sm:text-base",
+                isYourTurn
+                  ? "text-primary-foreground/85"
+                  : "text-muted-foreground",
+              )}
+              aria-hidden
+            >
+              {t("patientQueue.aheadCaption", { count: model.countAhead })}
+            </span>
+          </div>
         ) : null}
       </div>
 
@@ -104,7 +123,7 @@ export function LiveQueueCard({ model, className }: LiveQueueCardProps) {
           <p
             className={cn(
               "mt-1 text-sm font-normal",
-              model.visualState === "yourTurn"
+              isYourTurn
                 ? "text-primary-foreground/85"
                 : "opacity-90",
             )}

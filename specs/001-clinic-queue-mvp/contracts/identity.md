@@ -8,7 +8,10 @@ max 100). Errors return ProblemDetails (RFC 7807).
 |---|---|---|---|---|---|
 | POST | `/clinics` | Public | `{ name, specialty, contact, adminEmail, adminPassword }` | `{ clinicId, subdomainSlug, qrCodeUrl }` | FR-001, FR-007 |
 | PATCH | `/clinics/{clinicId}/branding` | ClinicOwner | `{ logoUrl?, primaryColor?, secondaryColor? }` | `{ clinicId, branding }` | FR-003 |
+| GET | `/clinics/{clinicId}/settings` | ClinicOwner | — | `{ clinicId, name, subdomainSlug, settings }` | FR-004 |
 | PATCH | `/clinics/{clinicId}/settings` | ClinicOwner | `{ urgentRatio?, headToClinicThreshold?, autoAbsenceTimeoutMinutes?, repeatedAbsenceThreshold?, workingHours?, timezone? }` | `{ clinicId, settings }` | FR-004 |
+| GET | `/clinics/{clinicId}/branding` | ClinicOwner | — | `{ clinicId, branding }` | FR-003 |
+| PATCH | `/clinics/{clinicId}/branding` | ClinicOwner | `{ logoUrl?, primaryColor?, secondaryColor? }` | `{ clinicId, branding }` | FR-003 |
 | POST | `/auth/register` | Public | `{ emailOrPhone, password }` | `{ userId }` (global identity — Clarification Q1) | FR-006, FR-010 |
 | POST | `/auth/login` | Public | `{ emailOrPhone, password }` | Sets HttpOnly Secure access + refresh cookies; `{ userId, roles: [...] }` | FR-010, FR-013, FR-016 |
 | POST | `/auth/refresh` | Cookie (refresh) | — | Rotates refresh cookie, reissues access cookie | FR-013 |

@@ -38,12 +38,13 @@
   --danger: var(--brand-danger);
   --bg: var(--brand-bg);
   --surface: var(--brand-surface);
+  --text: var(--brand-primary);
   --muted-ink: var(--brand-muted);
   --border: var(--brand-border);
 
   /* shadcn / Tailwind semantic bridge */
   --background: var(--brand-bg);
-  --foreground: var(--brand-primary);
+  --foreground: var(--text);
   --card: var(--brand-surface);
   --card-foreground: var(--brand-primary);
   --popover: var(--brand-surface);
@@ -377,8 +378,13 @@ body {
     @apply text-[clamp(4.5rem,18vw,7.5rem)] leading-none font-bold tracking-tight tabular-nums text-primary;
   }
 
+  .cq-count-ahead {
+    @apply text-[clamp(2.25rem,10vw,3.5rem)] leading-none font-bold tracking-tight tabular-nums text-primary;
+  }
+
   .cq-queue-hero {
     @apply relative overflow-hidden rounded-2xl border border-border bg-surface p-6 sm:p-8;
+    min-height: min(72vw, 22rem);
   }
 
   .cq-queue-hero[data-state="waitHome"] {
@@ -419,6 +425,18 @@ body {
       var(--surface) 60%
     );
     border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  }
+
+  .cq-queue-hero[data-state="pending"] {
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--brand-border) 55%, var(--surface)) 0%,
+      var(--surface) 60%
+    );
+  }
+
+  .cq-queue-hero[data-state="yourTurn"] .cq-count-ahead {
+    color: var(--primary-foreground);
   }
 
   .cq-queue-status {
@@ -473,6 +491,355 @@ body {
 
   .cq-queue-skeleton {
     @apply animate-pulse rounded-2xl border border-border bg-surface p-6 sm:p-8;
+  }
+
+  /* —— Reception console (desktop desk) —— */
+  .cq-app-frame:has(.cq-reception-console) {
+    @apply max-w-6xl;
+  }
+
+  .cq-reception-console[data-paused="true"] {
+    position: relative;
+  }
+
+  .cq-reception-console[data-paused="true"] .cq-reception-workbench {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: grayscale(0.15);
+  }
+
+  .cq-reception-strip {
+    @apply sticky top-0 z-20 grid grid-cols-2 gap-2 rounded-xl border border-border bg-surface/95 p-3 shadow-none backdrop-blur-sm sm:grid-cols-5;
+  }
+
+  .cq-reception-strip[data-paused="true"] {
+    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  }
+
+  .cq-reception-strip-metric {
+    @apply flex flex-col gap-0.5 rounded-lg border border-divider bg-card px-3 py-2;
+  }
+
+  .cq-reception-strip-metric dt {
+    @apply text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase;
+  }
+
+  .cq-reception-strip-metric dd {
+    @apply text-base font-semibold tabular-nums text-foreground sm:text-lg;
+  }
+
+  .cq-reception-strip-metric[data-tone="paused"] dd {
+    @apply text-warning-foreground;
+  }
+
+  .cq-reception-strip-metric[data-tone="open"] dd {
+    color: var(--success);
+  }
+
+  .cq-paused-banner {
+    @apply flex flex-col gap-3 rounded-xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between;
+    border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+    background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+    color: var(--warning-foreground);
+  }
+
+  .cq-reception-table-wrap {
+    @apply overflow-x-auto rounded-xl border border-border bg-surface;
+  }
+
+  .cq-reception-table {
+    @apply w-full min-w-[52rem] border-collapse text-sm;
+  }
+
+  .cq-reception-table thead th {
+    @apply border-b border-divider bg-muted/60 px-3 py-2.5 text-start text-xs font-semibold tracking-wide text-muted-foreground uppercase;
+  }
+
+  .cq-reception-table tbody td {
+    @apply border-b border-divider px-3 py-2.5 align-middle;
+  }
+
+  .cq-reception-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .cq-reception-row[data-urgent="true"] {
+    background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+    box-shadow: inset 3px 0 0 0 var(--danger);
+  }
+
+  html[dir="rtl"] .cq-reception-row[data-urgent="true"] {
+    box-shadow: inset -3px 0 0 0 var(--danger);
+  }
+
+  .cq-reception-row[data-urgent="true"] td:first-child {
+    @apply font-semibold;
+  }
+
+  .cq-emergency-zone {
+    @apply mt-2 flex flex-col gap-3 rounded-xl border-2 border-dashed p-4;
+    border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+    background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+  }
+
+  .cq-confirm-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-primary/35 p-4 backdrop-blur-[2px];
+  }
+
+  .cq-confirm-panel {
+    @apply flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-none;
+  }
+
+  .cq-reception-skeleton {
+    @apply animate-pulse space-y-2 rounded-xl border border-border bg-surface p-4;
+  }
+
+  .cq-reception-skeleton-row {
+    @apply h-10 rounded-md bg-muted;
+  }
+
+  /* —— Day close / bookings / medical / auth presentation —— */
+  .cq-summary-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-3;
+  }
+
+  .cq-summary-stat {
+    @apply rounded-lg border border-divider bg-card px-4 py-3 text-center;
+  }
+
+  .cq-summary-stat__value {
+    @apply text-2xl font-semibold tabular-nums text-primary;
+  }
+
+  .cq-summary-stat__label {
+    @apply mt-1 text-xs font-medium tracking-wide text-muted-foreground;
+  }
+
+  .cq-callout-info {
+    @apply rounded-lg border border-info/25 bg-info-muted px-4 py-3 text-sm text-info-foreground;
+  }
+
+  .cq-fr022-banner {
+    @apply rounded-xl border border-primary/20 bg-surface-tint px-4 py-4 text-sm leading-relaxed text-foreground sm:px-5 sm:py-5 sm:text-base;
+  }
+
+  .cq-fr022-banner strong {
+    @apply font-semibold text-primary;
+  }
+
+  .cq-booking-card {
+    @apply flex flex-col gap-2 rounded-lg border border-divider bg-card p-4;
+  }
+
+  .cq-allergy-panel {
+    @apply rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-3;
+  }
+
+  .cq-allergy-panel__title {
+    @apply text-sm font-semibold tracking-wide text-destructive;
+  }
+
+  .cq-rx-card {
+    @apply rounded-lg border border-divider bg-card p-4;
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--teal-lt) 22%, var(--surface)) 0%,
+      var(--surface) 40%
+    );
+  }
+
+  .cq-rx-card__grid {
+    @apply mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2;
+  }
+
+  .cq-rx-card__field dt {
+    @apply text-xs font-medium tracking-wide text-muted-foreground;
+  }
+
+  .cq-rx-card__field dd {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .cq-timeline {
+    @apply relative flex flex-col gap-4 border-s-2 border-divider ps-4;
+  }
+
+  .cq-timeline__item {
+    @apply relative;
+  }
+
+  .cq-timeline__item::before {
+    content: "";
+    @apply absolute top-1.5 size-2.5 rounded-full bg-teal;
+    inset-inline-start: calc(-1rem - 0.35rem);
+  }
+
+  .cq-clinic-brand {
+    @apply overflow-hidden rounded-2xl border border-border bg-surface p-6 sm:p-8;
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--clinic-primary, var(--primary)) 12%, var(--surface)) 0%,
+      color-mix(in srgb, var(--clinic-secondary, var(--teal-lt)) 28%, var(--surface)) 55%,
+      var(--surface) 100%
+    );
+  }
+
+  .cq-clinic-pick {
+    @apply flex w-full flex-col items-start gap-0.5 rounded-lg border border-divider bg-card px-4 py-3 text-start transition-[border-color,background-color] hover:border-teal hover:bg-surface-tint;
+  }
+
+  .cq-clinic-pick:disabled {
+    @apply opacity-50;
+  }
+
+  .cq-profile-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
+  }
+
+  .cq-profile-field {
+    @apply rounded-lg border border-divider bg-card px-3 py-2.5;
+  }
+
+  .cq-profile-field dt {
+    @apply text-xs font-medium tracking-wide text-muted-foreground;
+  }
+
+  .cq-profile-field dd {
+    @apply mt-1 text-sm text-foreground;
+  }
+
+  .cq-empty-friendly {
+    @apply rounded-lg border border-dashed border-divider bg-surface-tint/60 px-4 py-8 text-center text-sm text-muted-foreground;
+  }
+
+  .cq-choice-card {
+    @apply rounded-lg border border-divider bg-surface-tint p-4;
+  }
+
+  .cq-confirm-inline {
+    @apply rounded-lg border border-destructive/30 bg-destructive/5 p-4;
+  }
+
+  .cq-tabs {
+    @apply flex flex-wrap gap-2 rounded-lg border border-divider bg-card/70 p-1.5;
+  }
+
+  .cq-tab {
+    @apply min-h-11 rounded-md px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none;
+  }
+
+  .cq-tab--active {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground;
+  }
+
+  /* —— Doctor / owner / admin Phase B —— */
+  .cq-app-frame:has(.cq-doctor-console),
+  .cq-app-frame:has(.cq-owner-reports),
+  .cq-app-frame:has(.cq-admin-console) {
+    @apply max-w-5xl;
+  }
+
+  .cq-doctor-summary {
+    @apply sticky top-0 z-20 grid grid-cols-2 gap-2 rounded-xl border border-border bg-surface/95 p-3 backdrop-blur-sm sm:grid-cols-4;
+  }
+
+  .cq-doctor-summary-metric {
+    @apply flex flex-col gap-0.5 rounded-lg border border-divider bg-card px-3 py-2;
+  }
+
+  .cq-doctor-summary-metric dt {
+    @apply text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase;
+  }
+
+  .cq-doctor-summary-metric dd {
+    @apply text-lg font-semibold tabular-nums text-foreground;
+  }
+
+  .cq-doctor-summary-metric[data-tone="urgent"] dd {
+    color: color-mix(in srgb, var(--danger) 75%, var(--primary));
+  }
+
+  .cq-chart-card {
+    @apply flex flex-col gap-3 rounded-xl border border-border bg-surface p-4;
+  }
+
+  .cq-chart-insight {
+    @apply rounded-md border border-divider bg-surface-tint px-3 py-2 text-sm text-foreground;
+  }
+
+  .cq-chart-bars {
+    @apply flex flex-col gap-2;
+  }
+
+  .cq-chart-bar-row {
+    @apply grid grid-cols-[minmax(4.5rem,7rem)_1fr_auto] items-center gap-2 text-sm;
+  }
+
+  .cq-chart-bar-label {
+    @apply truncate text-muted-foreground;
+  }
+
+  .cq-chart-bar-track {
+    @apply h-2.5 overflow-hidden rounded-full bg-muted;
+  }
+
+  .cq-chart-bar-fill {
+    @apply block h-full rounded-full;
+    background: var(--chart-1);
+    min-width: 0.25rem;
+  }
+
+  .cq-chart-bar-fill[data-tone="secondary"] {
+    background: var(--chart-2);
+  }
+
+  .cq-chart-bar-value {
+    @apply min-w-8 text-end font-medium text-foreground;
+  }
+
+  .cq-chart-gauge {
+    @apply flex flex-col gap-2;
+  }
+
+  .cq-chart-gauge-track {
+    @apply h-3 overflow-hidden rounded-full bg-muted;
+  }
+
+  .cq-chart-gauge-fill {
+    @apply h-full rounded-full;
+    background: var(--chart-3);
+  }
+
+  .cq-chart-gauge-value {
+    @apply text-2xl font-semibold text-foreground;
+  }
+
+  .cq-chart-big-number {
+    @apply text-3xl font-semibold tracking-tight text-primary;
+  }
+
+  .cq-chart-big-number-unit {
+    @apply ms-2 text-sm font-medium text-muted-foreground;
+  }
+
+  .cq-admin-status-chip {
+    @apply inline-flex rounded-md px-2 py-0.5 text-xs font-medium;
+    background: color-mix(in srgb, var(--success) 14%, var(--surface));
+    color: var(--success);
+  }
+
+  .cq-admin-status-chip[data-status="Suspended"] {
+    background: color-mix(in srgb, var(--warning) 18%, var(--surface));
+    color: var(--warning-foreground);
+  }
+
+  .cq-admin-qr-frame {
+    @apply flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface-tint px-4 py-6 text-center;
+  }
+
+  .cq-admin-qr-path {
+    @apply text-lg font-semibold tracking-tight text-primary;
   }
 }
 

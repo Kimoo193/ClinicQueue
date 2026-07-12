@@ -58,21 +58,32 @@ export function AppHeader({ navRoles }: AppHeaderProps) {
 
       <div className="flex flex-wrap items-center gap-2">
         {showSwitcher ? (
-          <label className="cq-label !mb-0 flex-row items-center gap-2">
-            <span className="sr-only">{t("auth.clinicSwitcher")}</span>
-            <select
-              className="cq-field max-w-[12rem]"
-              value={activeClinic?.id ?? ""}
-              aria-label={t("auth.clinicSwitcher")}
-              onChange={(e) => void onClinicChange(e.target.value)}
+          <>
+            <label className="cq-label !mb-0 flex-row items-center gap-2">
+              <span className="sr-only">{t("auth.clinicSwitcher")}</span>
+              <select
+                className="cq-field max-w-[12rem]"
+                value={activeClinic?.id ?? ""}
+                aria-label={t("auth.clinicSwitcher")}
+                onChange={(e) => void onClinicChange(e.target.value)}
+              >
+                {clinicIds.map((id) => (
+                  <option key={id} value={id}>
+                    {clinicName(memberships, id) || t("auth.unnamedClinic")}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Link
+              to="/choose-clinic"
+              className={cn(
+                buttonVariants({ size: "sm", variant: "outline" }),
+                "min-h-11 sm:min-h-9",
+              )}
             >
-              {clinicIds.map((id) => (
-                <option key={id} value={id}>
-                  {clinicName(memberships, id)}
-                </option>
-              ))}
-            </select>
-          </label>
+              {t("auth.chooseClinicTitle")}
+            </Link>
+          </>
         ) : null}
 
         <Button

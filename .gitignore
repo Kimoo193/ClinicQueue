@@ -492,3 +492,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+frontend_prompts_playbook.md

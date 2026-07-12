@@ -15,7 +15,6 @@ public sealed record CreateAppointmentCommand(
     Guid BookedByUserId,
     DateOnly Day,
     AppointmentMethod Method,
-    int CompanionsCount,
     bool PossibleUrgentFlag,
     Guid? DependentId,
     string? DepositProofUrl = null);
@@ -66,11 +65,6 @@ public sealed class CreateAppointmentHandler : ICreateAppointmentHandler
         CreateAppointmentCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.CompanionsCount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(command.CompanionsCount));
-        }
-
         await _accessGate.EnsureCanAcceptNewBookingsAsync(command.ClinicId, cancellationToken);
 
         var clinic = await _db.Clinics.AsNoTracking()
@@ -204,7 +198,6 @@ public sealed class CreateAppointmentHandler : ICreateAppointmentHandler
                 PossibleUrgentFlag = command.PossibleUrgentFlag,
                 Method = command.Method,
                 TemporaryNumber = nextTemp + 1,
-                CompanionsCount = command.CompanionsCount,
                 Status = AppointmentStatus.Booked,
                 DepositProofUrl = command.Method == AppointmentMethod.PhoneDeposit
                     ? command.DepositProofUrl

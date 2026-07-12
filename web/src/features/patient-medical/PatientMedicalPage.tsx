@@ -1,26 +1,21 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import { useActiveClinic } from "@/features/auth/AuthProvider";
 
-import {
-  getPatientProfile,
-  listMyClinics,
-  listMyVisits,
-  updatePatientProfile,
-} from "./api";
+import { getPatientProfile, listMyClinics, listMyVisits } from "./api";
+
+function displayOrEmpty(
+  value: string | null | undefined,
+  emptyLabel: string,
+): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : emptyLabel;
+}
 
 export function PatientMedicalPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { id: clinicId } = useActiveClinic();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [bloodType, setBloodType] = useState("");
-  const [chronicConditions, setChronicConditions] = useState("");
-  const [allergies, setAllergies] = useState("");
-  const [currentMedications, setCurrentMedications] = useState("");
 
   const clinicsQuery = useQuery({
     queryKey: ["patient-my-clinics"],
@@ -43,36 +38,20 @@ export function PatientMedicalPage() {
     queryFn: () => listMyVisits(clinicId),
   });
 
-  useEffect(() => {
-    if (!profileQuery.data) return;
-    setBloodType(profileQuery.data.bloodType ?? "");
-    setChronicConditions(profileQuery.data.chronicConditions ?? "");
-    setAllergies(profileQuery.data.allergies ?? "");
-    setCurrentMedications(profileQuery.data.currentMedications ?? "");
-  }, [profileQuery.data]);
+  const profile = profileQuery.data;
+  const visits = visitsQuery.data ?? [];
+  const emptyValue = t("patientMedical.notRecorded");
 
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      updatePatientProfile(membershipId!, {
-        bloodType: bloodType || undefined,
-        chronicConditions: chronicConditions || undefined,
-        allergies: allergies || undefined,
-        currentMedications: currentMedications || undefined,
-      }),
-    onSuccess: async () => {
-      setActionError(null);
-      await queryClient.invalidateQueries({
-        queryKey: ["patient-profile", membershipId],
-      });
-    },
-    onError: (error: Error) => setActionError(error.message),
-  });
-
-  const onSave = (event: FormEvent) => {
-    event.preventDefault();
-    if (!membershipId) return;
-    saveMutation.mutate();
-  };
+  const clinicsError = clinicsQuery.isError
+    ? (clinicsQuery.error as Error).message
+    : null;
+  const profileError = profileQuery.isError
+    ? (profileQuery.error as Error).message
+    : null;
+  const visitsError = visitsQuery.isError
+    ? (visitsQuery.error as Error).message
+    : null;
+  const loadError = clinicsError ?? profileError ?? visitsError;
 
   return (
     <div className="cq-page">
@@ -81,9 +60,9 @@ export function PatientMedicalPage() {
         <p className="cq-page-subtitle">{t("patientMedical.subtitle")}</p>
       </header>
 
-      {actionError ? (
+      {loadError ? (
         <p className="cq-alert" role="alert">
-          {actionError}
+          {t("patientMedical.loadError")}
         </p>
       ) : null}
 
@@ -97,58 +76,41 @@ export function PatientMedicalPage() {
         <h2 id="medical-profile" className="cq-section-title">
           {t("patientMedical.profile")}
         </h2>
-        {profileQuery.isLoading ? (
+        {profileQuery.isLoading || clinicsQuery.isLoading ? (
           <p className="cq-status">{t("patientMedical.loading")}</p>
         ) : (
-          <form className="space-y-3" onSubmit={onSave}>
-            <label className="cq-label">
-              <span>{t("patientMedical.bloodType")}</span>
-              <input
-                value={bloodType}
-                onChange={(e) => setBloodType(e.target.value)}
-                className="cq-field"
-                disabled={!membershipId}
-              />
-            </label>
-            <label className="cq-label">
-              <span>{t("patientMedical.chronic")}</span>
-              <textarea
-                value={chronicConditions}
-                onChange={(e) => setChronicConditions(e.target.value)}
-                className="cq-field"
-                rows={2}
-                disabled={!membershipId}
-              />
-            </label>
-            <label className="cq-label">
-              <span>{t("patientMedical.allergies")}</span>
-              <textarea
-                value={allergies}
-                onChange={(e) => setAllergies(e.target.value)}
-                className="cq-field"
-                rows={2}
-                disabled={!membershipId}
-              />
-            </label>
-            <label className="cq-label">
-              <span>{t("patientMedical.medications")}</span>
-              <textarea
-                value={currentMedications}
-                onChange={(e) => setCurrentMedications(e.target.value)}
-                className="cq-field"
-                rows={2}
-                disabled={!membershipId}
-              />
-            </label>
-            <Button
-              type="submit"
-              disabled={!membershipId || saveMutation.isPending}
-            >
-              {saveMutation.isPending
-                ? t("patientMedical.saving")
-                : t("patientMedical.save")}
-            </Button>
-          </form>
+          <div className="flex flex-col gap-3">
+            <div className="cq-allergy-panel" role="status">
+              <p className="cq-allergy-panel__title">
+                {t("patientMedical.allergies")}
+              </p>
+              <p className="mt-1 text-sm font-medium text-destructive">
+                {displayOrEmpty(profile?.allergies, t("patientMedical.noAllergies"))}
+              </p>
+            </div>
+
+            <dl className="cq-profile-grid">
+              <div className="cq-profile-field">
+                <dt>{t("patientMedical.bloodType")}</dt>
+                <dd>{displayOrEmpty(profile?.bloodType, emptyValue)}</dd>
+              </div>
+              <div className="cq-profile-field">
+                <dt>{t("patientMedical.chronic")}</dt>
+                <dd>
+                  {displayOrEmpty(profile?.chronicConditions, emptyValue)}
+                </dd>
+              </div>
+              <div className="cq-profile-field sm:col-span-2">
+                <dt>{t("patientMedical.medications")}</dt>
+                <dd>
+                  {displayOrEmpty(profile?.currentMedications, emptyValue)}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              {t("patientMedical.readOnlyNote")}
+            </p>
+          </div>
         )}
       </section>
 
@@ -158,30 +120,65 @@ export function PatientMedicalPage() {
         </h2>
         {visitsQuery.isLoading ? (
           <p className="cq-status">{t("patientMedical.loading")}</p>
-        ) : !visitsQuery.data?.length ? (
-          <p className="cq-status">{t("patientMedical.emptyHistory")}</p>
+        ) : visits.length === 0 ? (
+          <div className="cq-empty-friendly">
+            <p className="font-medium text-foreground">
+              {t("patientMedical.emptyTitle")}
+            </p>
+            <p className="mt-1">{t("patientMedical.emptyHistory")}</p>
+          </div>
         ) : (
-          <ul className="cq-list">
-            {visitsQuery.data.map((visit) => (
-              <li key={visit.visitId} className="space-y-1">
-                <p>
-                  <strong>{new Date(visit.date).toLocaleDateString()}</strong> —{" "}
+          <ol className="cq-timeline">
+            {visits.map((visit) => (
+              <li key={visit.visitId} className="cq-timeline__item">
+                <p className="text-sm font-semibold text-foreground">
+                  {new Date(visit.date).toLocaleDateString()}
+                </p>
+                <p className="mt-1 text-sm">
+                  <span className="text-muted-foreground">
+                    {t("patientMedical.diagnosis")}:{" "}
+                  </span>
                   {visit.diagnosis}
                 </p>
-                {visit.notes ? <p className="text-sm">{visit.notes}</p> : null}
-                {visit.prescription ? (
-                  <p className="text-sm text-muted-foreground">
-                    {t("patientMedical.prescription", {
-                      drug: visit.prescription.drug,
-                      dose: visit.prescription.dose,
-                      frequency: visit.prescription.frequency,
-                      duration: visit.prescription.duration,
-                    })}
+                {visit.notes ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      {t("patientMedical.notes")}:{" "}
+                    </span>
+                    {visit.notes}
                   </p>
+                ) : null}
+                {visit.prescription ? (
+                  <article
+                    className="cq-rx-card mt-3"
+                    aria-label={t("patientMedical.prescriptionTitle")}
+                  >
+                    <h3 className="text-sm font-semibold">
+                      {t("patientMedical.prescriptionTitle")}
+                    </h3>
+                    <dl className="cq-rx-card__grid">
+                      <div className="cq-rx-card__field">
+                        <dt>{t("patientMedical.drug")}</dt>
+                        <dd>{visit.prescription.drug}</dd>
+                      </div>
+                      <div className="cq-rx-card__field">
+                        <dt>{t("patientMedical.dose")}</dt>
+                        <dd>{visit.prescription.dose}</dd>
+                      </div>
+                      <div className="cq-rx-card__field">
+                        <dt>{t("patientMedical.frequency")}</dt>
+                        <dd>{visit.prescription.frequency}</dd>
+                      </div>
+                      <div className="cq-rx-card__field">
+                        <dt>{t("patientMedical.duration")}</dt>
+                        <dd>{visit.prescription.duration}</dd>
+                      </div>
+                    </dl>
+                  </article>
                 ) : null}
               </li>
             ))}
-          </ul>
+          </ol>
         )}
       </section>
     </div>

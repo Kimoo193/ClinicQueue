@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -30,6 +30,25 @@ export function ClinicEntryPage() {
     );
   }
 
+  if (profileQuery.isError) {
+    return (
+      <section className="cq-page mx-auto max-w-md">
+        <header className="cq-page-header">
+          <h1 className="cq-page-title">{t("auth.clinicLoadErrorTitle")}</h1>
+          <p className="cq-page-subtitle">{t("auth.clinicLoadErrorSubtitle")}</p>
+        </header>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild variant="outline">
+            <Link to="/find-clinic">{t("auth.findClinicTitle")}</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/">{t("auth.backHome")}</Link>
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
   if (!profileQuery.data) {
     return (
       <section className="cq-page mx-auto max-w-md">
@@ -52,14 +71,14 @@ export function ClinicEntryPage() {
   const clinic = profileQuery.data;
   const brandStyle =
     clinic.primaryColor || clinic.secondaryColor
-      ? {
+      ? ({
           ...(clinic.primaryColor
             ? { ["--clinic-primary" as string]: clinic.primaryColor }
             : {}),
           ...(clinic.secondaryColor
             ? { ["--clinic-secondary" as string]: clinic.secondaryColor }
             : {}),
-        }
+        } as CSSProperties)
       : undefined;
 
   const loginTo = `/login?clinicId=${encodeURIComponent(clinic.clinicId)}`;
@@ -82,46 +101,71 @@ export function ClinicEntryPage() {
   };
 
   return (
-    <section className="cq-page mx-auto max-w-md" style={brandStyle}>
-      <header className="cq-page-header">
+    <section className="cq-page mx-auto max-w-md">
+      <article className="cq-clinic-brand" style={brandStyle}>
         {clinic.logoUrl ? (
           <img
             src={clinic.logoUrl}
             alt=""
-            className="mb-3 h-14 w-14 rounded-lg object-cover"
+            className="mb-4 h-16 w-16 rounded-xl object-cover"
           />
-        ) : null}
-        <h1 className="cq-page-title">{clinic.name}</h1>
-        <p className="cq-page-subtitle">
+        ) : (
+          <div
+            className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl text-xl font-semibold text-primary-foreground"
+            style={{
+              background:
+                "var(--clinic-primary, var(--primary))",
+            }}
+            aria-hidden
+          >
+            {clinic.name.slice(0, 1)}
+          </div>
+        )}
+        <p className="text-sm font-medium text-muted-foreground">
+          {t("auth.clinicEntryEyebrow")}
+        </p>
+        <h1 className="cq-page-title mt-1">{clinic.name}</h1>
+        <p className="cq-page-subtitle mt-2">
           {t("auth.clinicEntrySubtitle", { specialty: clinic.specialty })}
         </p>
-      </header>
+      </article>
 
       {joinError ? (
-        <p className="cq-alert mb-4" role="alert">
+        <p className="cq-alert mt-4" role="alert">
           {joinError}
         </p>
       ) : null}
 
-      {user ? (
-        <div className="flex flex-wrap gap-3">
-          <Button type="button" disabled={joining} onClick={() => void onJoin()}>
-            {joining ? t("auth.joiningClinic") : t("auth.joinClinic")}
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/find-clinic">{t("auth.findClinicTitle")}</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-3">
-          <Button asChild>
-            <Link to={registerTo}>{t("auth.register")}</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to={loginTo}>{t("auth.login")}</Link>
-          </Button>
-        </div>
-      )}
+      <div className="mt-6">
+        {user ? (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              disabled={joining}
+              onClick={() => void onJoin()}
+            >
+              {joining ? t("auth.joiningClinic") : t("auth.joinClinic")}
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/find-clinic">{t("auth.findClinicTitle")}</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t("auth.clinicEntryCta")}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link to={registerTo}>{t("auth.register")}</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={loginTo}>{t("auth.login")}</Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

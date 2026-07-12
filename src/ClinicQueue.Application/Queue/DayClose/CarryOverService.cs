@@ -87,7 +87,6 @@ public sealed class CarryOverService : ICarryOverService
             BookedByUserId = source.BookedByUserId,
             Type = source.Type,
             Method = source.Method,
-            CompanionsCount = source.CompanionsCount,
             PossibleUrgentFlag = source.PossibleUrgentFlag,
             TemporaryNumber = position,
             Status = AppointmentStatus.Booked

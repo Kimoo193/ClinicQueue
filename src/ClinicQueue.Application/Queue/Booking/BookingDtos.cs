@@ -6,7 +6,6 @@ public sealed record CreateAppointmentRequest(
     Guid ClinicId,
     DateOnly Day,
     string Method,
-    int CompanionsCount,
     bool PossibleUrgentFlag = false,
     Guid? DependentId = null,
     string? DepositProofUrl = null);
@@ -30,8 +29,7 @@ public sealed record OnBehalfBookingRequest(
     Guid PatientRef,
     DateOnly Day,
     string Type,
-    string Method,
-    int CompanionsCount);
+    string Method);
 
 public sealed record SetAppointmentTypeRequest(string Type);
 
@@ -66,7 +64,6 @@ public sealed record ReceptionAppointmentDto(
     int? RealNumber,
     bool IsInstantEntry,
     bool PossibleUrgentFlag,
-    int CompanionsCount,
     bool RepeatedAbsenceFlag = false,
     int AbsenceCount = 0,
     string? MembershipStatus = null,
@@ -85,7 +82,6 @@ public sealed class CreateAppointmentRequestValidator : AbstractValidator<Create
             .NotEmpty()
             .Must(m => m is "WalkIn" or "Walkin" or "PhoneDeposit" or "Phone-Deposit")
             .WithMessage("Method must be WalkIn or PhoneDeposit.");
-        RuleFor(x => x.CompanionsCount).InclusiveBetween(0, 20);
     }
 }
 
@@ -104,7 +100,6 @@ public sealed class OnBehalfBookingRequestValidator : AbstractValidator<OnBehalf
             .NotEmpty()
             .Must(m => m is "WalkIn" or "Walkin" or "PhoneDeposit" or "Phone-Deposit")
             .WithMessage("Method must be WalkIn or PhoneDeposit.");
-        RuleFor(x => x.CompanionsCount).InclusiveBetween(0, 20);
     }
 }
 
