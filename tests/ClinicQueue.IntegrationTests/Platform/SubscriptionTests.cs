@@ -125,7 +125,7 @@ public sealed class SubscriptionTests(Infrastructure.PostgresFixture fixture)
         await assignAct.Should().ThrowAsync<ClinicSuspendedException>();
 
         var bookAct = async () => await BookingHandler(db).HandleAsync(new CreateAppointmentCommand(
-            clinicId, patient.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, patient.Id, day, AppointmentMethod.WalkIn, false, null));
         await bookAct.Should().ThrowAsync<ClinicSuspendedException>();
 
         // Reactivate — staff ops resume.
@@ -197,7 +197,7 @@ public sealed class SubscriptionTests(Infrastructure.PostgresFixture fixture)
 
         // New booking blocked.
         var bookAct = async () => await BookingHandler(db).HandleAsync(new CreateAppointmentCommand(
-            clinicId, patient.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, patient.Id, day, AppointmentMethod.WalkIn, false, null));
         await bookAct.Should().ThrowAsync<SubscriptionExpiredException>();
 
         // New session creation blocked (different day with no existing session).

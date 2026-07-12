@@ -141,7 +141,7 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
         var handler = CreateHandler(db);
         var day = ClinicToday();
         var command = new CreateAppointmentCommand(
-            clinicId, user.Id, day, AppointmentMethod.WalkIn, 0, false, null);
+            clinicId, user.Id, day, AppointmentMethod.WalkIn, false, null);
 
         await handler.HandleAsync(command);
 
@@ -262,7 +262,7 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
         await setup.SaveChangesAsync();
 
         var command = new CreateAppointmentCommand(
-            clinicId, user.Id, day, AppointmentMethod.WalkIn, 0, false, null);
+            clinicId, user.Id, day, AppointmentMethod.WalkIn, false, null);
 
         async Task<Exception?> AttemptAsync()
         {
@@ -326,7 +326,7 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
         var tomorrow = ClinicToday().AddDays(1);
 
         var act = async () => await handler.HandleAsync(new CreateAppointmentCommand(
-            clinicId, user.Id, tomorrow, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, user.Id, tomorrow, AppointmentMethod.WalkIn, false, null));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*clinic today*");
@@ -373,7 +373,7 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
 
         var handler = CreateHandler(db);
         var act = async () => await handler.HandleAsync(new CreateAppointmentCommand(
-            clinicId, user.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, user.Id, day, AppointmentMethod.WalkIn, false, null));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*closed*");
@@ -483,9 +483,9 @@ public sealed class BookingTests(Infrastructure.PostgresFixture fixture)
         var day = ClinicToday();
 
         await handler.HandleAsync(new CreateAppointmentCommand(
-            clinicId, firstUser.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, firstUser.Id, day, AppointmentMethod.WalkIn, false, null));
         await handler.HandleAsync(new CreateAppointmentCommand(
-            clinicId, secondUser.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, secondUser.Id, day, AppointmentMethod.WalkIn, false, null));
 
         var firstHeadToClinic = await db.OutboxNotifications.CountAsync(n =>
             n.ClinicId == clinicId

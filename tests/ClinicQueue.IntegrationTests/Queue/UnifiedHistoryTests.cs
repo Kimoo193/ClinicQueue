@@ -100,9 +100,9 @@ public sealed class UnifiedHistoryTests(Infrastructure.PostgresFixture fixture)
         var book = CreateBookingHandler(db);
 
         var bookingA = await book.HandleAsync(new CreateAppointmentCommand(
-            clinicA, user.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicA, user.Id, day, AppointmentMethod.WalkIn, false, null));
         var bookingB = await book.HandleAsync(new CreateAppointmentCommand(
-            clinicB, user.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicB, user.Id, day, AppointmentMethod.WalkIn, false, null));
 
         var list = await CreateListHandler(db).HandleAsync(
             new ListPatientAppointmentsQuery(user.Id, "upcoming", UnifiedAcrossClinics: true));
@@ -147,7 +147,7 @@ public sealed class UnifiedHistoryTests(Infrastructure.PostgresFixture fixture)
 
         var day = ClinicToday();
         var created = await CreateBookingHandler(db).HandleAsync(new CreateAppointmentCommand(
-            clinicId, user.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, user.Id, day, AppointmentMethod.WalkIn, false, null));
 
         var cancel = await new CancelAppointmentHandler(db).HandleAsync(
             new CancelAppointmentCommand(created.AppointmentId, user.Id, clinicId, IsStaff: false));
@@ -208,7 +208,7 @@ public sealed class UnifiedHistoryTests(Infrastructure.PostgresFixture fixture)
 
         // Guardian self-booking
         var self = await book.HandleAsync(new CreateAppointmentCommand(
-            clinicId, guardian.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+            clinicId, guardian.Id, day, AppointmentMethod.WalkIn, false, null));
 
         // Dependent booking same day — distinct patient-of-record (FR-041a / FR-046)
         var dependentBooking = await new DependentBookingHandler(book, db).HandleAsync(

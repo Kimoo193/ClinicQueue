@@ -93,7 +93,7 @@ public sealed class QueueConcurrencyTests(Infrastructure.PostgresFixture fixture
         foreach (var user in users)
         {
             var created = await book.HandleAsync(new CreateAppointmentCommand(
-                clinicId, user.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+                clinicId, user.Id, day, AppointmentMethod.WalkIn, false, null));
             appointmentIds.Add(created.AppointmentId);
         }
 
@@ -160,9 +160,9 @@ public sealed class QueueConcurrencyTests(Infrastructure.PostgresFixture fixture
         await db.SaveChangesAsync();
 
         var book = CreateBookingHandler(db);
-        var a1 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n1.Id, day, AppointmentMethod.WalkIn, 0, false, null));
-        var a2 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n2.Id, day, AppointmentMethod.WalkIn, 0, false, null));
-        var au = await book.HandleAsync(new CreateAppointmentCommand(clinicId, u1.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+        var a1 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n1.Id, day, AppointmentMethod.WalkIn, false, null));
+        var a2 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n2.Id, day, AppointmentMethod.WalkIn, false, null));
+        var au = await book.HandleAsync(new CreateAppointmentCommand(clinicId, u1.Id, day, AppointmentMethod.WalkIn, false, null));
 
         var urgent = await db.Appointments.FirstAsync(a => a.Id == au.AppointmentId);
         urgent.Type = AppointmentType.Urgent;
@@ -211,9 +211,9 @@ public sealed class QueueConcurrencyTests(Infrastructure.PostgresFixture fixture
         await db.SaveChangesAsync();
 
         var book = CreateBookingHandler(db);
-        var a1 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n1.Id, day, AppointmentMethod.WalkIn, 0, false, null));
-        var au = await book.HandleAsync(new CreateAppointmentCommand(clinicId, u1.Id, day, AppointmentMethod.WalkIn, 0, false, null));
-        var a2 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n2.Id, day, AppointmentMethod.WalkIn, 0, false, null));
+        var a1 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n1.Id, day, AppointmentMethod.WalkIn, false, null));
+        var au = await book.HandleAsync(new CreateAppointmentCommand(clinicId, u1.Id, day, AppointmentMethod.WalkIn, false, null));
+        var a2 = await book.HandleAsync(new CreateAppointmentCommand(clinicId, n2.Id, day, AppointmentMethod.WalkIn, false, null));
 
         (await db.Appointments.FirstAsync(a => a.Id == au.AppointmentId)).Type = AppointmentType.Urgent;
         await db.SaveChangesAsync();
