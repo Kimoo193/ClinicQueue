@@ -47,7 +47,6 @@ export function PatientQueuePage({
   const queryClient = useQueryClient();
   const { id: clinicId } = useActiveClinic();
   const { connection } = useQueueHub();
-  const [companionsCount, setCompanionsCount] = useState(0);
   const [possibleUrgent, setPossibleUrgent] = useState(false);
   const [liveById, setLiveById] = useState<Record<string, PositionUpdate>>({});
   const [extras, setExtras] = useState<LiveExtras>({
@@ -150,7 +149,6 @@ export function PatientQueuePage({
       clinicId,
       day: todayInClinicTimezone(clinicTimezone),
       method: "WalkIn",
-      companionsCount,
       possibleUrgentFlag: possibleUrgent,
     });
   };
@@ -196,22 +194,6 @@ export function PatientQueuePage({
 
       <form onSubmit={onSubmit} className="cq-section gap-4">
         <h2 className="cq-section-title">{t("patientQueue.bookSection")}</h2>
-        <label className="cq-label">
-          <span>{t("patientQueue.companions")}</span>
-          <input
-            type="number"
-            min={0}
-            max={20}
-            value={companionsCount}
-            onChange={(e) => setCompanionsCount(Number(e.target.value))}
-            className="cq-field"
-            aria-describedby="companions-hint"
-          />
-          <span id="companions-hint" className="text-xs text-muted-foreground">
-            {t("patientQueue.companionsHint")}
-          </span>
-        </label>
-
         <label className="cq-check">
           <input
             type="checkbox"

@@ -16,7 +16,6 @@ export type ReceptionAppointment = {
   realNumber?: number | null;
   isInstantEntry: boolean;
   possibleUrgentFlag: boolean;
-  companionsCount: number;
   depositConfirmed?: boolean;
 };
 

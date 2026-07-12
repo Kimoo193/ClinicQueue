@@ -126,7 +126,6 @@ export async function createAppointment(payload: {
   clinicId: string;
   day: string;
   method: "WalkIn" | "PhoneDeposit";
-  companionsCount: number;
   possibleUrgentFlag?: boolean;
   dependentId?: string;
   depositProofUrl?: string | null;

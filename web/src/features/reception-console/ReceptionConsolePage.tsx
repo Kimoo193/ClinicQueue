@@ -84,7 +84,6 @@ export function ReceptionConsolePage({
   const [onBehalfType, setOnBehalfType] = useState<"Normal" | "Urgent">(
     "Normal",
   );
-  const [companions, setCompanions] = useState(0);
 
   const [instantPatientRef, setInstantPatientRef] = useState("");
   const [instantReason, setInstantReason] = useState("");
@@ -223,7 +222,6 @@ export function ReceptionConsolePage({
       day: todayInClinicTimezone(clinicTimezone),
       type: onBehalfType,
       method: "WalkIn",
-      companionsCount: companions,
     });
   };
 
@@ -459,18 +457,6 @@ export function ReceptionConsolePage({
                 <option value="Normal">{t("reception.normal")}</option>
                 <option value="Urgent">{t("reception.urgent")}</option>
               </select>
-            </label>
-            <label className="cq-label">
-              <span>{t("reception.companions")}</span>
-              <input
-                type="number"
-                min={0}
-                max={20}
-                value={companions}
-                onChange={(e) => setCompanions(Number(e.target.value))}
-                className="cq-field"
-                disabled={isPaused}
-              />
             </label>
             <Button
               type="submit"

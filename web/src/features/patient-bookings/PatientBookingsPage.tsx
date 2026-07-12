@@ -54,7 +54,6 @@ export function PatientBookingsPage({
   const [selectedDependentId, setSelectedDependentId] = useState("");
   const [bookForSelf, setBookForSelf] = useState(true);
   const [method, setMethod] = useState<"WalkIn" | "PhoneDeposit">("WalkIn");
-  const [companionsCount, setCompanionsCount] = useState(0);
   const [possibleUrgent, setPossibleUrgent] = useState(false);
   const [depositProofUrl, setDepositProofUrl] = useState<string | null>(null);
   const [depositFileName, setDepositFileName] = useState<string | null>(null);
@@ -99,7 +98,6 @@ export function PatientBookingsPage({
       setFormError(null);
       setDepositProofUrl(null);
       setDepositFileName(null);
-      setCompanionsCount(0);
       setPossibleUrgent(false);
       setMethod("WalkIn");
       setBookSuccess(
@@ -196,7 +194,6 @@ export function PatientBookingsPage({
       clinicId,
       day: todayInClinicTimezone(clinicTimezone),
       method,
-      companionsCount,
       possibleUrgentFlag: possibleUrgent,
       dependentId: bookForSelf ? undefined : selectedDependentId,
       depositProofUrl:
@@ -353,23 +350,6 @@ export function PatientBookingsPage({
               ) : null}
             </label>
           ) : null}
-
-          <label className="cq-label">
-            <span>{t("patientBookings.companions")}</span>
-            <input
-              type="number"
-              min={0}
-              max={20}
-              value={companionsCount}
-              onChange={(e) =>
-                setCompanionsCount(Number.parseInt(e.target.value, 10) || 0)
-              }
-              className="cq-field"
-            />
-            <span className="text-xs text-muted-foreground">
-              {t("patientBookings.companionsHint")}
-            </span>
-          </label>
 
           <Button type="submit" disabled={bookMutation.isPending}>
             {bookMutation.isPending

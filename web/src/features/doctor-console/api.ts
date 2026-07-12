@@ -31,7 +31,6 @@ export type DoctorAppointment = {
   realNumber?: number | null;
   isInstantEntry: boolean;
   possibleUrgentFlag: boolean;
-  companionsCount: number;
   repeatedAbsenceFlag?: boolean;
   absenceCount?: number;
   membershipStatus?: string | null;

@@ -9,7 +9,6 @@ export type ReceptionAppointment = {
   realNumber?: number | null;
   isInstantEntry: boolean;
   possibleUrgentFlag: boolean;
-  companionsCount: number;
   repeatedAbsenceFlag?: boolean;
   absenceCount?: number;
   membershipStatus?: string | null;
@@ -37,7 +36,6 @@ export type OnBehalfPayload = {
   day: string;
   type: "Normal" | "Urgent";
   method: "WalkIn" | "PhoneDeposit";
-  companionsCount: number;
 };
 
 export type InstantEntryPayload = {
