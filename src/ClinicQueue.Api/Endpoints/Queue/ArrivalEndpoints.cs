@@ -37,6 +37,12 @@ public static class ArrivalEndpoints
             .WithName("InstantEntry")
             .WithSummary("Insert an urgent walk-in with immediate real number");
 
+        group.MapPost("/appointments/{id:guid}/mark-absent", MarkAbsentAsync)
+            .RequireAuthorization(Policies.Receptionist)
+            .RequireRateLimiting(Middleware.RateLimitingPolicies.Sensitive)
+            .WithName("MarkAbsent")
+            .WithSummary("Mark an active appointment absent and advance the queue");
+
         group.MapGet("/appointments/today", ListTodayAsync)
             .RequireAuthorization(Policies.Receptionist)
             .WithName("ListTodayAppointments")
@@ -132,6 +138,61 @@ public static class ArrivalEndpoints
         {
             return MapDomainError(ex);
         }
+    }
+
+    // Manual absence (FR-029 companion to AutoAbsenceJob): a receptionist marks a no-show/left
+    // patient absent so the queue advances. Auto-absence only covers the called-in timeout; the desk
+    // still needs an explicit control, which the console already exposes.
+    private static async Task<IResult> MarkAbsentAsync(
+        Guid id,
+        IAppDbContext db,
+        ICountAheadService countAhead,
+        IQueueRealtimePublisher realtime,
+        ILoggerFactory loggerFactory,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var clinicId = ResolveClinicId(httpContext);
+        if (clinicId is null)
+        {
+            return Results.Problem(
+                detail: "clinic_id claim is required.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        // RLS-scoped read: the app role only sees this clinic's rows, but keep the explicit
+        // ClinicId predicate so the intent is visible and defence-in-depth holds.
+        var appointment = await db.Appointments
+            .FirstOrDefaultAsync(
+                a => a.Id == id && a.ClinicId == clinicId.Value,
+                cancellationToken);
+        if (appointment is null)
+        {
+            return Results.NotFound();
+        }
+
+        if (appointment.Status is not (AppointmentStatus.Booked
+            or AppointmentStatus.Present
+            or AppointmentStatus.Inside))
+        {
+            return Results.Problem(
+                detail: $"Appointment is {appointment.Status} and cannot be marked absent.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        appointment.Status = AppointmentStatus.Absent;
+        await db.SaveChangesAsync(cancellationToken);
+
+        // The queue just changed shape — push fresh counts so waiting patients update without refresh.
+        await TryPublishSessionPositionsAsync(
+            db,
+            countAhead,
+            realtime,
+            clinicId.Value,
+            loggerFactory,
+            cancellationToken);
+
+        return Results.Ok(new { appointmentId = appointment.Id, status = appointment.Status.ToString() });
     }
 
     private static async Task<IResult> InstantEntryAsync(
