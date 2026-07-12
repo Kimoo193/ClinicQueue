@@ -82,13 +82,17 @@ export function PatientQueuePage({
 
     const onPosition = (update: PositionUpdate) => {
       setLiveById((prev) => ({ ...prev, [update.appointmentId]: update }));
-      if (update.instruction === "yourTurn") {
-        setExtras((prev) => ({
-          ...prev,
-          yourTurnById: { ...prev.yourTurnById, [update.appointmentId]: true },
-          pausedById: { ...prev.pausedById, [update.appointmentId]: false },
-        }));
-      }
+      // A fresh position reasserts live reality: if the patient still has people ahead the
+      // queue has moved on (reorder, urgent insertion, mis-fire), so a prior "your turn" must
+      // be cleared — otherwise the hero stays stuck on "It's your turn" indefinitely.
+      setExtras((prev) => ({
+        ...prev,
+        yourTurnById: {
+          ...prev.yourTurnById,
+          [update.appointmentId]: update.instruction === "yourTurn",
+        },
+        pausedById: { ...prev.pausedById, [update.appointmentId]: false },
+      }));
     };
 
     const onNotification = (raw: HubNotification) => {

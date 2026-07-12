@@ -80,12 +80,18 @@ export function AppHeader({ navRoles }: AppHeaderProps) {
           variant="outline"
           onClick={toggleLanguage}
           aria-label={t("language.toggle")}
+          className="min-h-11 sm:min-h-9"
         >
           {i18n.language.startsWith("ar") ? t("language.en") : t("language.ar")}
         </Button>
 
         {user ? (
-          <Button type="button" variant="ghost" onClick={() => void logout()}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void logout()}
+            className="min-h-11 sm:min-h-9"
+          >
             {t("auth.logout")}
           </Button>
         ) : null}
@@ -103,6 +109,8 @@ export function AppHeader({ navRoles }: AppHeaderProps) {
                     size: "sm",
                     variant: isActive ? "default" : "ghost",
                   }),
+                  // Comfortable touch target on phones; compact on desktop.
+                  "min-h-11 sm:min-h-8",
                 )
               }
             >

@@ -70,7 +70,10 @@ public sealed record ReceptionAppointmentDto(
     bool RepeatedAbsenceFlag = false,
     int AbsenceCount = 0,
     string? MembershipStatus = null,
-    bool DepositConfirmed = false);
+    bool DepositConfirmed = false,
+    // Human identifier (patient email/phone) so reception can recognise who is next,
+    // not a raw membership GUID. Null for dependent bookings with no linked user.
+    string? PatientLabel = null);
 
 public sealed class CreateAppointmentRequestValidator : AbstractValidator<CreateAppointmentRequest>
 {

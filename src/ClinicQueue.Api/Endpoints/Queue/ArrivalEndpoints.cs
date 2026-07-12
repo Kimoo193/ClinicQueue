@@ -305,19 +305,35 @@ public static class ArrivalEndpoints
         var membershipIds = rows
             .Where(r => r.PatientMembershipId is not null)
             .Select(r => r.PatientMembershipId!.Value)
-            .Distinct();
+            .Distinct()
+            .ToList();
 
         var flags = await absencePolicy.EvaluateManyAsync(
             clinicId.Value,
             membershipIds,
             cancellationToken);
 
+        // Resolve a human label (patient email/phone) per membership so the console shows who
+        // the patient is rather than a truncated GUID. Scoped to this clinic's memberships by RLS.
+        var labelByMembership = membershipIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await db.ClinicMemberships.AsNoTracking()
+                .Where(m => membershipIds.Contains(m.Id))
+                .Join(
+                    db.Users.AsNoTracking(),
+                    m => m.UserId,
+                    u => u.Id,
+                    (m, u) => new { m.Id, u.EmailOrPhone })
+                .ToDictionaryAsync(x => x.Id, x => x.EmailOrPhone, cancellationToken);
+
         var appointments = rows.Select(a =>
         {
             AbsenceFlagResult? flag = null;
+            string? patientLabel = null;
             if (a.PatientMembershipId is { } mid)
             {
                 flags.TryGetValue(mid, out flag);
+                labelByMembership.TryGetValue(mid, out patientLabel);
             }
 
             return new ReceptionAppointmentDto(
@@ -335,7 +351,8 @@ public static class ArrivalEndpoints
                 flag?.IsFlagged ?? false,
                 flag?.AbsenceCount ?? 0,
                 flag?.MembershipStatus,
-                a.DepositConfirmed);
+                a.DepositConfirmed,
+                patientLabel);
         }).ToList();
 
         return Results.Ok(appointments);
