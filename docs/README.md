@@ -3,6 +3,7 @@
 | Document | Audience | Purpose |
 |----------|----------|---------|
 | [running.md](running.md) | Developers / ops | How to run locally and with Docker |
+| [demo-accounts.md](demo-accounts.md) | Developers / QA | Every seeded demo login, what it can do, how to run it |
 | [architecture.md](architecture.md) | Developers | Modules, tenancy, queue, notifications |
 | [configuration.md](configuration.md) | Developers / ops | Config keys and environment variables |
 | [api-overview.md](api-overview.md) | Developers | HTTP + SignalR surface map |

@@ -46,6 +46,12 @@ Idempotent two-clinic demo (`ghada` + `smile`) with accounts password **`Test@12
 
 Prints the account table and QR paths (`/r/ghada`, `/r/smile`). Uses the production three-role DB model (owner migrations, BYPASSRLS privileged writes, app-role tenant data).
 
+Full account list, what each one can do, and how to log in as each: [demo-accounts.md](demo-accounts.md). To see every account actually work over the API in one shot:
+
+```bash
+./scripts/demo-users.sh
+```
+
 ### Playwright E2E (release gate S1–S9)
 
 With API on `:8080` and Vite on `:5173` (or let the harness start them):

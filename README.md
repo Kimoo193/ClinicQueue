@@ -79,6 +79,7 @@ CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (restore â†’ build â†
 | Doc | Contents |
 |-----|----------|
 | [docs/running.md](docs/running.md) | Local + Docker run, bootstrap, ports |
+| [docs/demo-accounts.md](docs/demo-accounts.md) | Every seeded demo login (all roles), how to sign in, `scripts/demo-users.sh` |
 | [docs/architecture.md](docs/architecture.md) | Modules, tenancy, outbox, numbering |
 | [docs/configuration.md](docs/configuration.md) | Config keys and env vars |
 | [docs/api-overview.md](docs/api-overview.md) | `/api/v1` route map |
