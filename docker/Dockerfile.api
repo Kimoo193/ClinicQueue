@@ -9,10 +9,12 @@ COPY src/ClinicQueue.Application/ClinicQueue.Application.csproj src/ClinicQueue.
 COPY src/ClinicQueue.Infrastructure/ClinicQueue.Infrastructure.csproj src/ClinicQueue.Infrastructure/
 COPY src/ClinicQueue.Api/ClinicQueue.Api.csproj src/ClinicQueue.Api/
 
-RUN dotnet restore src/ClinicQueue.Api/ClinicQueue.Api.csproj
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore src/ClinicQueue.Api/ClinicQueue.Api.csproj
 
 COPY src/ src/
-RUN dotnet publish src/ClinicQueue.Api/ClinicQueue.Api.csproj -c Release -o /app/publish --no-restore
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish src/ClinicQueue.Api/ClinicQueue.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

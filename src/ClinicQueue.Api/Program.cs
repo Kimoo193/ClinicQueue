@@ -83,6 +83,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<RegisterDependentRequestVal
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateSubscriptionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<SubmitRatingRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<InviteReceptionistRequestValidator>();
+// ClaimAccountRequestValidator lives in this (Api) assembly, not Application — the calls
+// above only scan Application's assembly, so this one needs its own registration.
+builder.Services.AddValidatorsFromAssemblyContaining<AuthEndpoints.ClaimAccountRequestValidator>();
 
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? string.Empty;
 var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? string.Empty;
@@ -105,6 +108,14 @@ app.UseForwardedHeaders();
 app.UseClinicQueueSecurityHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+
+// Single-origin SPA hosting (see docker/Dockerfile.render.api): serves the built React app
+// from wwwroot when present, so HttpOnly auth cookies and relative /api, /hubs calls stay
+// same-origin. No-op locally where wwwroot doesn't exist — docker-compose serves the SPA via
+// its own nginx/web container instead.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors(CorsExtensions.DefaultPolicy);
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -142,6 +153,7 @@ v1.MapGet("/status", () => Results.Ok(new
 v1.MapAuthEndpoints();
 v1.MapClinicEndpoints();
 v1.MapMembershipEndpoints();
+v1.MapOfflinePatientEndpoints();
 v1.MapClinicSearchEndpoints();
 v1.MapBookingEndpoints();
 v1.MapArrivalEndpoints();
@@ -192,6 +204,24 @@ if (builder.Configuration.GetValue("Database:ApplyMigrationsOnStartup", false))
 {
     await app.Services.ApplyMigrationsAsync(allowInProduction: true);
 }
+
+// Falls back to the SPA shell for any path that didn't match an API/hub endpoint above, so
+// client-side routing works. No-op when wwwroot has no index.html (plain local dotnet run).
+// Excludes /api and /hubs so a bad path there still 404s instead of returning the SPA shell —
+// matches the local nginx setup, where those prefixes route to the api upstream, never `web`.
+app.MapFallback(context =>
+{
+    if (context.Request.Path.StartsWithSegments("/api")
+        || context.Request.Path.StartsWithSegments("/hubs"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return Task.CompletedTask;
+    }
+
+    context.Response.ContentType = "text/html";
+    return context.Response.SendFileAsync(
+        Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html"));
+});
 
 app.Run();
 

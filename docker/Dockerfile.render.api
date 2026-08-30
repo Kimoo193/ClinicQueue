@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+#
+# Single-origin build for hosting platforms (e.g. Render free tier) that only run one
+# container: bundles the built React SPA into the API's wwwroot so auth cookies and the
+# relative /api, /hubs calls stay same-origin. Local dev keeps using docker/Dockerfile.api +
+# docker/Dockerfile.web as two separate containers behind nginx — this file is additive.
+
+FROM node:24-alpine AS webbuild
+WORKDIR /web
+
+COPY web/package.json web/package-lock.json* ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+COPY web/ ./
+RUN npm run build
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ClinicQueue.slnx ./
+COPY src/ClinicQueue.Domain/ClinicQueue.Domain.csproj src/ClinicQueue.Domain/
+COPY src/ClinicQueue.Application/ClinicQueue.Application.csproj src/ClinicQueue.Application/
+COPY src/ClinicQueue.Infrastructure/ClinicQueue.Infrastructure.csproj src/ClinicQueue.Infrastructure/
+COPY src/ClinicQueue.Api/ClinicQueue.Api.csproj src/ClinicQueue.Api/
+
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore src/ClinicQueue.Api/ClinicQueue.Api.csproj
+
+COPY src/ src/
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish src/ClinicQueue.Api/ClinicQueue.Api.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+# curl is not in the base image; used for local/manual health probing.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish .
+COPY --from=webbuild /web/dist ./wwwroot
+ENTRYPOINT ["dotnet", "ClinicQueue.Api.dll"]

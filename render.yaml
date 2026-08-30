@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: clinicqueue-api
+    runtime: docker
+    dockerfilePath: docker/Dockerfile.render.api
+    dockerContext: .
+    region: frankfurt
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Hangfire__Enabled
+        value: "true"
+      - key: Database__ApplyMigrationsOnStartup
+        value: "true"
+      # Secrets: set once in the Render dashboard when applying this blueprint. Never
+      # committed here — see the deployment notes for the values to paste in.
+      - key: ConnectionStrings__Default
+        sync: false
+      - key: ConnectionStrings__Migrations
+        sync: false
+      - key: ConnectionStrings__Privileged
+        sync: false
+      - key: Jwt__SigningKey
+        sync: false
+      - key: Vapid__PublicKey
+        sync: false
+      - key: Vapid__PrivateKey
+        sync: false

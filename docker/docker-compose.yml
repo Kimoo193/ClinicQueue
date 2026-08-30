@@ -14,6 +14,9 @@ services:
       - clinicqueue
 
   api:
+    # Shared image tag with hangfire-worker below: identical build (context+dockerfile) is
+    # built once and reused for both services, instead of a full SDK restore+publish twice.
+    image: clinicqueue-api:local
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
@@ -47,6 +50,7 @@ services:
     restart: unless-stopped
 
   hangfire-worker:
+    image: clinicqueue-api:local
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
