@@ -83,9 +83,6 @@ builder.Services.AddValidatorsFromAssemblyContaining<RegisterDependentRequestVal
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateSubscriptionRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<SubmitRatingRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<InviteReceptionistRequestValidator>();
-// ClaimAccountRequestValidator lives in this (Api) assembly, not Application — the calls
-// above only scan Application's assembly, so this one needs its own registration.
-builder.Services.AddValidatorsFromAssemblyContaining<AuthEndpoints.ClaimAccountRequestValidator>();
 
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? string.Empty;
 var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? string.Empty;
@@ -153,7 +150,6 @@ v1.MapGet("/status", () => Results.Ok(new
 v1.MapAuthEndpoints();
 v1.MapClinicEndpoints();
 v1.MapMembershipEndpoints();
-v1.MapOfflinePatientEndpoints();
 v1.MapClinicSearchEndpoints();
 v1.MapBookingEndpoints();
 v1.MapArrivalEndpoints();
