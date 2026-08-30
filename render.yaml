@@ -14,6 +14,11 @@ services:
         value: "true"
       - key: Database__ApplyMigrationsOnStartup
         value: "true"
+      # Render's free instance has a very low inotify-instance limit; ASP.NET Core's default
+      # appsettings.json file watcher hits it and crashes the app during CreateBuilder(args),
+      # before any of our code runs. Nothing to watch for changes in a container anyway.
+      - key: DOTNET_hostBuilder__reloadConfigOnChange
+        value: "false"
       # Secrets: set once in the Render dashboard when applying this blueprint. Never
       # committed here — see the deployment notes for the values to paste in.
       - key: ConnectionStrings__Default
